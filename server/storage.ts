@@ -1,0 +1,202 @@
+import {
+  users,
+  artists,
+  categories,
+  products,
+  designs,
+  cartItems,
+  orders,
+  orderItems,
+  type User,
+  type UpsertUser,
+  type Artist,
+  type Category,
+  type Product,
+  type Design,
+  type CartItem,
+  type Order,
+  type OrderItem,
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, and, sql } from "drizzle-orm";
+
+export interface IStorage {
+  // User operations (mandatory for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
+  // Artist operations
+  createArtist(artistData: typeof artists.$inferInsert): Promise<Artist>;
+  getArtist(id: number): Promise<Artist | undefined>;
+  getArtistByUserId(userId: string): Promise<Artist | undefined>;
+  getAllArtists(): Promise<Artist[]>;
+  
+  // Category operations
+  getAllCategories(): Promise<Category[]>;
+  getCategoryBySlug(slug: string): Promise<Category | undefined>;
+  
+  // Product operations
+  getAllProducts(): Promise<Product[]>;
+  getProductsByCategory(categoryId: number): Promise<Product[]>;
+  getProduct(id: number): Promise<Product | undefined>;
+  
+  // Design operations
+  createDesign(designData: typeof designs.$inferInsert): Promise<Design>;
+  getDesignsByArtist(artistId: number): Promise<Design[]>;
+  getAllDesigns(): Promise<Design[]>;
+  getDesign(id: number): Promise<Design | undefined>;
+  
+  // Cart operations
+  addToCart(cartData: typeof cartItems.$inferInsert): Promise<CartItem>;
+  getCartItems(userId: string): Promise<CartItem[]>;
+  updateCartItem(id: number, quantity: number): Promise<void>;
+  removeFromCart(id: number): Promise<void>;
+  clearCart(userId: string): Promise<void>;
+  
+  // Order operations
+  createOrder(orderData: typeof orders.$inferInsert, items: typeof orderItems.$inferInsert[]): Promise<Order>;
+  getOrdersByUser(userId: string): Promise<Order[]>;
+  getOrder(id: number): Promise<Order | undefined>;
+}
+
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  // Artist operations
+  async createArtist(artistData: typeof artists.$inferInsert): Promise<Artist> {
+    const [artist] = await db.insert(artists).values(artistData).returning();
+    return artist;
+  }
+
+  async getArtist(id: number): Promise<Artist | undefined> {
+    const [artist] = await db.select().from(artists).where(eq(artists.id, id));
+    return artist;
+  }
+
+  async getArtistByUserId(userId: string): Promise<Artist | undefined> {
+    const [artist] = await db.select().from(artists).where(eq(artists.userId, userId));
+    return artist;
+  }
+
+  async getAllArtists(): Promise<Artist[]> {
+    return await db.select().from(artists).where(eq(artists.isVerified, true));
+  }
+
+  // Category operations
+  async getAllCategories(): Promise<Category[]> {
+    return await db.select().from(categories).orderBy(categories.sortOrder);
+  }
+
+  async getCategoryBySlug(slug: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.slug, slug));
+    return category;
+  }
+
+  // Product operations
+  async getAllProducts(): Promise<Product[]> {
+    return await db.select().from(products).where(eq(products.isActive, true));
+  }
+
+  async getProductsByCategory(categoryId: number): Promise<Product[]> {
+    return await db.select().from(products)
+      .where(and(eq(products.categoryId, categoryId), eq(products.isActive, true)));
+  }
+
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product;
+  }
+
+  // Design operations
+  async createDesign(designData: typeof designs.$inferInsert): Promise<Design> {
+    const [design] = await db.insert(designs).values(designData).returning();
+    return design;
+  }
+
+  async getDesignsByArtist(artistId: number): Promise<Design[]> {
+    return await db.select().from(designs)
+      .where(and(eq(designs.artistId, artistId), eq(designs.isPublic, true)))
+      .orderBy(desc(designs.createdAt));
+  }
+
+  async getAllDesigns(): Promise<Design[]> {
+    return await db.select().from(designs)
+      .where(eq(designs.isPublic, true))
+      .orderBy(desc(designs.createdAt));
+  }
+
+  async getDesign(id: number): Promise<Design | undefined> {
+    const [design] = await db.select().from(designs).where(eq(designs.id, id));
+    return design;
+  }
+
+  // Cart operations
+  async addToCart(cartData: typeof cartItems.$inferInsert): Promise<CartItem> {
+    const [item] = await db.insert(cartItems).values(cartData).returning();
+    return item;
+  }
+
+  async getCartItems(userId: string): Promise<CartItem[]> {
+    return await db.select().from(cartItems).where(eq(cartItems.userId, userId));
+  }
+
+  async updateCartItem(id: number, quantity: number): Promise<void> {
+    await db.update(cartItems)
+      .set({ quantity })
+      .where(eq(cartItems.id, id));
+  }
+
+  async removeFromCart(id: number): Promise<void> {
+    await db.delete(cartItems).where(eq(cartItems.id, id));
+  }
+
+  async clearCart(userId: string): Promise<void> {
+    await db.delete(cartItems).where(eq(cartItems.userId, userId));
+  }
+
+  // Order operations
+  async createOrder(orderData: typeof orders.$inferInsert, items: typeof orderItems.$inferInsert[]): Promise<Order> {
+    const [order] = await db.insert(orders).values(orderData).returning();
+    
+    const orderItemsWithOrderId = items.map(item => ({
+      ...item,
+      orderId: order.id,
+    }));
+    
+    await db.insert(orderItems).values(orderItemsWithOrderId);
+    
+    return order;
+  }
+
+  async getOrdersByUser(userId: string): Promise<Order[]> {
+    return await db.select().from(orders)
+      .where(eq(orders.userId, userId))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async getOrder(id: number): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    return order;
+  }
+}
+
+export const storage = new DatabaseStorage();

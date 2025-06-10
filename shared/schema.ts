@@ -1,0 +1,146 @@
+import {
+  pgTable,
+  text,
+  varchar,
+  timestamp,
+  jsonb,
+  index,
+  serial,
+  decimal,
+  boolean,
+  integer,
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for Replit Auth
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  userType: varchar("user_type").notNull().default("customer"), // customer, artist
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Artist profiles
+export const artists = pgTable("artists", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  bio: text("bio"),
+  specialty: varchar("specialty"),
+  socialLinks: jsonb("social_links"),
+  isVerified: boolean("is_verified").default(false),
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).default("0.30"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Product categories
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
+  slug: varchar("slug").notNull().unique(),
+  description: text("description"),
+  imageUrl: varchar("image_url"),
+  sortOrder: integer("sort_order").default(0),
+});
+
+// Products
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  categoryId: integer("category_id").references(() => categories.id),
+  basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
+  imageUrl: varchar("image_url"),
+  customizationOptions: jsonb("customization_options"), // colors, sizes, materials
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Artist designs
+export const designs = pgTable("designs", {
+  id: serial("id").primaryKey(),
+  artistId: integer("artist_id").references(() => artists.id),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  imageUrl: varchar("image_url").notNull(),
+  fileUrl: varchar("file_url"), // high-res download URL
+  tags: jsonb("tags"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  isPublic: boolean("is_public").default(true),
+  downloadCount: integer("download_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Shopping cart items
+export const cartItems = pgTable("cart_items", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  productId: integer("product_id").references(() => products.id),
+  designId: integer("design_id").references(() => designs.id),
+  quantity: integer("quantity").notNull().default(1),
+  customization: jsonb("customization"), // size, color, text, etc.
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Orders
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  orderNumber: varchar("order_number").notNull().unique(),
+  status: varchar("status").notNull().default("pending"), // pending, processing, shipped, delivered, cancelled
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  shippingAddress: jsonb("shipping_address"),
+  paymentStatus: varchar("payment_status").default("pending"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Order items
+export const orderItems = pgTable("order_items", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").references(() => orders.id),
+  productId: integer("product_id").references(() => products.id),
+  designId: integer("design_id").references(() => designs.id),
+  quantity: integer("quantity").notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  customization: jsonb("customization"),
+  artistCommission: decimal("artist_commission", { precision: 10, scale: 2 }),
+});
+
+// Schemas
+export const insertUserSchema = createInsertSchema(users);
+export const insertArtistSchema = createInsertSchema(artists);
+export const insertCategorySchema = createInsertSchema(categories);
+export const insertProductSchema = createInsertSchema(products);
+export const insertDesignSchema = createInsertSchema(designs);
+export const insertCartItemSchema = createInsertSchema(cartItems);
+export const insertOrderSchema = createInsertSchema(orders);
+export const insertOrderItemSchema = createInsertSchema(orderItems);
+
+// Types
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type Artist = typeof artists.$inferSelect;
+export type Category = typeof categories.$inferSelect;
+export type Product = typeof products.$inferSelect;
+export type Design = typeof designs.$inferSelect;
+export type CartItem = typeof cartItems.$inferSelect;
+export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;
