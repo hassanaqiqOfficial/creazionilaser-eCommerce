@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertCartItemSchema, insertDesignSchema } from "@shared/schema";
+import { insertCartItemSchema, insertDesignSchema, categories, products } from "@shared/schema";
+import { db } from "./db";
 import multer from "multer";
 import path from "path";
 import { nanoid } from "nanoid";
@@ -301,7 +302,7 @@ async function seedData() {
     }
 
     // Seed categories
-    const categories = [
+    const categoriesData = [
       { name: "Custom T-Shirts", slug: "t-shirts", description: "High-quality custom printed t-shirts", imageUrl: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300", sortOrder: 1 },
       { name: "Wooden Plaques", slug: "wooden-plaques", description: "Laser engraved wooden plaques", imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=300", sortOrder: 2 },
       { name: "Stickers & Decals", slug: "stickers", description: "Vinyl cut stickers and decals", imageUrl: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=300", sortOrder: 3 },
@@ -309,20 +310,21 @@ async function seedData() {
       { name: "Phone Cases", slug: "phone-cases", description: "Custom printed smartphone cases", imageUrl: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=300", sortOrder: 5 },
     ];
 
-    for (const category of categories) {
-      await storage.db.insert(storage.categories).values(category);
+    // Insert categories using the database instance
+    for (const categoryData of categoriesData) {
+      await db.insert(categories).values(categoryData);
     }
 
     // Seed products
-    const products = [
+    const productsData = [
       { name: "Classic Cotton T-Shirt", description: "100% cotton, available in multiple colors", categoryId: 1, basePrice: "24.99", imageUrl: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400", customizationOptions: { colors: ["white", "black", "blue", "red"], sizes: ["S", "M", "L", "XL"] } },
       { name: "Premium Wooden Plaque", description: "High-quality wood with precision laser engraving", categoryId: 2, basePrice: "39.99", imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400", customizationOptions: { sizes: ["Small", "Medium", "Large"], materials: ["Oak", "Pine", "Walnut"] } },
       { name: "Vinyl Sticker Pack", description: "Durable vinyl stickers, weatherproof", categoryId: 3, basePrice: "12.99", imageUrl: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400", customizationOptions: { quantities: ["5-pack", "10-pack", "25-pack"] } },
       { name: "Custom Keychain", description: "Personalized keychains in various materials", categoryId: 4, basePrice: "8.99", imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400", customizationOptions: { materials: ["Acrylic", "Wood", "Metal"] } },
     ];
 
-    for (const product of products) {
-      await storage.db.insert(storage.products).values(product);
+    for (const productData of productsData) {
+      await db.insert(products).values(productData);
     }
 
     console.log("Database seeded successfully");

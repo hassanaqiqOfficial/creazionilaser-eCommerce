@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -231,9 +231,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }, 0);
   };
 
-  return (
-    <CartContext.Provider
-      value={{
+  return React.createElement(
+    CartContext.Provider,
+    {
+      value: {
         cartItems: state.items,
         isLoading: state.isLoading,
         addToCart,
@@ -242,10 +243,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         getItemCount,
         getTotalPrice,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
+      }
+    },
+    children
   );
 }
 
