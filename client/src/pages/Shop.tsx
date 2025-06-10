@@ -10,7 +10,7 @@ import ProductCard from "@/components/ProductCard";
 
 export default function Shop() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
 
   const { data: categories = [] } = useQuery({
@@ -20,7 +20,7 @@ export default function Shop() {
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["/api/products", selectedCategory],
     queryFn: async () => {
-      const url = selectedCategory 
+      const url = selectedCategory && selectedCategory !== "all"
         ? `/api/products?category=${selectedCategory}`
         : "/api/products";
       const response = await fetch(url);
@@ -91,8 +91,8 @@ export default function Shop() {
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
-            {categories.map((category: any) => (
+            <SelectItem value="all">All Categories</SelectItem>
+            {Array.isArray(categories) && categories.map((category: any) => (
               <SelectItem key={category.slug} value={category.slug}>
                 {category.name}
               </SelectItem>
@@ -132,7 +132,7 @@ export default function Shop() {
           <Button 
             onClick={() => {
               setSearchQuery("");
-              setSelectedCategory("");
+              setSelectedCategory("all");
             }}
           >
             Clear Filters
