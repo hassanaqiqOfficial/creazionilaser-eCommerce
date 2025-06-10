@@ -17,6 +17,19 @@ interface CartItem {
   design?: any;
 }
 
+interface CartContextType {
+  cartItems: CartItem[];
+  isLoading: boolean;
+  addToCart: any;
+  updateQuantity: any;
+  removeFromCart: any;
+  clearCart: any;
+  getItemCount: () => number;
+  getTotalPrice: () => number;
+}
+
+const CartContext = createContext<CartContextType | null>(null);
+
 interface CartState {
   items: CartItem[];
   isLoading: boolean;
@@ -29,17 +42,6 @@ type CartAction =
   | { type: "UPDATE_ITEM"; id: number; quantity: number }
   | { type: "REMOVE_ITEM"; id: number }
   | { type: "CLEAR_CART" };
-
-const CartContext = createContext<{
-  cartItems: CartItem[];
-  isLoading: boolean;
-  addToCart: (item: Omit<CartItem, "id" | "userId" | "createdAt">) => void;
-  updateQuantity: (id: number, quantity: number) => void;
-  removeFromCart: (id: number) => void;
-  clearCart: () => void;
-  getItemCount: () => number;
-  getTotalPrice: () => number;
-} | null>(null);
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
@@ -68,7 +70,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   }
 }
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({ children }: { children: ReactNode }): React.ReactElement {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [state, dispatch] = useReducer(cartReducer, {
@@ -76,150 +78,118 @@ export function CartProvider({ children }: { children: ReactNode }) {
     isLoading: false,
   });
 
-  // Fetch cart items from server
-  const { data: cartItems = [], isLoading } = useQuery({
+  // Fetch cart items when user is authenticated
+  const { data: cartData } = useQuery({
     queryKey: ["/api/cart"],
     enabled: isAuthenticated,
-    refetchOnWindowFocus: false,
   });
 
-  // Fetch product and design details for cart items
-  const { data: products = [] } = useQuery({
-    queryKey: ["/api/products"],
-    enabled: cartItems.length > 0,
-  });
-
-  const { data: designs = [] } = useQuery({
-    queryKey: ["/api/designs"],
-    enabled: cartItems.length > 0,
-  });
-
-  // Enrich cart items with product and design details
   useEffect(() => {
-    if (cartItems.length > 0 && products.length > 0) {
-      const enrichedItems = cartItems.map((item: CartItem) => ({
-        ...item,
-        product: products.find((p: any) => p.id === item.productId),
-        design: item.designId ? designs.find((d: any) => d.id === item.designId) : null,
-      }));
-      dispatch({ type: "SET_ITEMS", items: enrichedItems });
-    } else {
-      dispatch({ type: "SET_ITEMS", items: cartItems });
+    if (cartData && typeof cartData === 'object') {
+      const data = cartData as any;
+      const { cartItems, products, designs } = data;
+      if (cartItems && Array.isArray(cartItems)) {
+        const enrichedItems = cartItems.map((item: CartItem) => ({
+          ...item,
+          product: products && Array.isArray(products) ? products.find((p: any) => p.id === item.productId) : null,
+          design: item.designId && designs && Array.isArray(designs) ? designs.find((d: any) => d.id === item.designId) : null,
+        }));
+        
+        dispatch({ type: "SET_ITEMS", items: enrichedItems });
+      }
     }
-  }, [cartItems, products, designs]);
+  }, [cartData]);
 
-  useEffect(() => {
-    dispatch({ type: "SET_LOADING", isLoading });
-  }, [isLoading]);
-
-  // Add to cart mutation
-  const addToCartMutation = useMutation({
-    mutationFn: async (item: Omit<CartItem, "id" | "userId" | "createdAt">) => {
-      const response = await apiRequest("POST", "/api/cart", item);
-      return response.json();
+  const addToCart = useMutation({
+    mutationFn: async (item: any) => {
+      const response = await apiRequest("/api/cart", {
+        method: "POST",
+        body: JSON.stringify(item),
+      });
+      return await response.json();
     },
-    onSuccess: (newItem) => {
-      dispatch({ type: "ADD_ITEM", item: newItem });
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+    onSuccess: (data) => {
+      dispatch({ type: "ADD_ITEM", item: data });
       toast({
         title: "Added to cart",
         description: "Item has been added to your cart.",
       });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update quantity mutation
-  const updateQuantityMutation = useMutation({
-    mutationFn: async ({ id, quantity }: { id: number; quantity: number }) => {
-      await apiRequest("PUT", `/api/cart/${id}`, { quantity });
-    },
-    onSuccess: (_, { id, quantity }) => {
-      dispatch({ type: "UPDATE_ITEM", id, quantity });
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to add item to cart.",
         variant: "destructive",
       });
     },
   });
 
-  // Remove from cart mutation
-  const removeFromCartMutation = useMutation({
+  const updateQuantity = useMutation({
+    mutationFn: async ({ id, quantity }: { id: number; quantity: number }) => {
+      return await apiRequest(`/api/cart/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ quantity }),
+      });
+    },
+    onSuccess: (_, variables) => {
+      dispatch({ type: "UPDATE_ITEM", id: variables.id, quantity: variables.quantity });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update cart item.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeFromCart = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/cart/${id}`);
+      return await apiRequest(`/api/cart/${id}`, {
+        method: "DELETE",
+      });
     },
     onSuccess: (_, id) => {
       dispatch({ type: "REMOVE_ITEM", id });
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       toast({
         title: "Removed from cart",
         description: "Item has been removed from your cart.",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to remove item from cart.",
         variant: "destructive",
       });
     },
   });
 
-  // Clear cart mutation
-  const clearCartMutation = useMutation({
+  const clearCart = useMutation({
     mutationFn: async () => {
-      // Clear cart by removing all items individually
-      await Promise.all(
-        state.items.map((item) => apiRequest("DELETE", `/api/cart/${item.id}`))
-      );
+      return await apiRequest("/api/cart", {
+        method: "DELETE",
+      });
     },
     onSuccess: () => {
       dispatch({ type: "CLEAR_CART" });
+      toast({
+        title: "Cart cleared",
+        description: "All items have been removed from your cart.",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to clear cart.",
         variant: "destructive",
       });
     },
   });
-
-  const addToCart = (item: Omit<CartItem, "id" | "userId" | "createdAt">) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to add items to your cart.",
-        variant: "destructive",
-      });
-      return;
-    }
-    addToCartMutation.mutate(item);
-  };
-
-  const updateQuantity = (id: number, quantity: number) => {
-    if (quantity < 1) return;
-    updateQuantityMutation.mutate({ id, quantity });
-  };
-
-  const removeFromCart = (id: number) => {
-    removeFromCartMutation.mutate(id);
-  };
-
-  const clearCart = () => {
-    clearCartMutation.mutate();
-  };
 
   const getItemCount = () => {
     return state.items.reduce((total, item) => total + item.quantity, 0);
@@ -231,23 +201,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }, 0);
   };
 
+  const contextValue = {
+    cartItems: state.items,
+    isLoading: state.isLoading,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+    getItemCount,
+    getTotalPrice,
+  };
+
   return React.createElement(
     CartContext.Provider,
-    {
-      value: {
-        cartItems: state.items,
-        isLoading: state.isLoading,
-        addToCart,
-        updateQuantity,
-        removeFromCart,
-        clearCart,
-        getItemCount,
-        getTotalPrice,
-      }
-    },
+    { value: contextValue },
     children
   );
-}
+};
 
 export function useCart() {
   const context = useContext(CartContext);
