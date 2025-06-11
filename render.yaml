@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: ecommerce-platform
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ecommerce-db
+          property: connectionString
+    autoDeploy: false
+
+databases:
+  - name: ecommerce-db
+    databaseName: ecommerce
+    user: ecommerce_user
