@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function Signup() {
@@ -33,12 +33,22 @@ export default function Signup() {
         body: JSON.stringify(data),
       });
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({
-        title: "Account created!",
-        description: "Welcome! You can now sign in to your account.",
+        title: "Account created successfully!",
+        description: "You have been automatically signed in.",
       });
-      setLocation("/login");
+      
+      // Invalidate auth query and redirect
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      setTimeout(() => {
+        if (data?.message?.includes("Admin")) {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = "/";
+        }
+      }, 100);
     },
     onError: (error: any) => {
       toast({
