@@ -70,12 +70,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create user
+      // Create user (first user becomes admin)
+      const userCount = await db.select({ count: sql`count(*)` }).from(users);
+      const isFirstUser = (userCount[0]?.count || 0) === 0;
+      
       const user = await storage.createUser({
         email,
         firstName,
         lastName,
         password: hashedPassword,
+        userType: isFirstUser ? 'admin' : 'customer',
       });
 
       res.status(201).json({ message: "User created successfully", userId: user.id });
@@ -346,13 +350,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes (protected)
-  const isAdmin = (req: any, res: any, next: any) => {
+  const isAdmin = async (req: any, res: any, next: any) => {
     if (!req.session?.userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    // For now, all authenticated users can access admin
-    // In production, you'd check for admin role
-    next();
+    
+    try {
+      const user = await storage.getUser(req.session.userId);
+      if (!user || user.userType !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      next();
+    } catch (error) {
+      return res.status(500).json({ message: "Authentication error" });
+    }
   };
 
   app.get('/api/admin/stats', isAdmin, async (req, res) => {

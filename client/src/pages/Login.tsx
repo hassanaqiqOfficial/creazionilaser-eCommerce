@@ -24,12 +24,18 @@ export default function Login() {
         body: JSON.stringify(data),
       });
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
-      setLocation("/");
+      
+      // Redirect based on user type
+      if (data?.userType === 'admin') {
+        setLocation("/admin");
+      } else {
+        setLocation("/");
+      }
     },
     onError: (error: any) => {
       toast({

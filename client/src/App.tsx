@@ -20,7 +20,7 @@ import NotFound from "@/pages/not-found";
 import { CartProvider } from "@/hooks/useCart";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -36,27 +36,56 @@ function Router() {
       <Route path="/signup" component={Signup} />
       <Route path="/">
         {isAuthenticated ? (
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-1">
-              <Switch>
-                <Route path="/" component={Home} />
-                <Route path="/shop" component={Shop} />
-                <Route path="/create" component={Create} />
-                <Route path="/artists" component={Artists} />
-                <Route path="/profile" component={Profile} />
-                <Route path="/cart" component={Cart} />
-                <Route path="/admin" component={Admin} />
-                <Route component={NotFound} />
-              </Switch>
-            </main>
-            <Footer />
-          </div>
+          <AuthenticatedApp user={user} />
         ) : (
           <Landing />
         )}
       </Route>
     </Switch>
+  );
+}
+
+function AuthenticatedApp({ user }: { user: any }) {
+  const isAdmin = user?.userType === 'admin';
+
+  // Auto-redirect admins to admin dashboard
+  if (isAdmin && window.location.pathname === '/') {
+    window.location.pathname = '/admin';
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-1">
+        <Switch>
+          <Route path="/" component={isAdmin ? Admin : Home} />
+          <Route path="/shop" component={Shop} />
+          <Route path="/create" component={Create} />
+          <Route path="/artists" component={Artists} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/cart" component={Cart} />
+          <Route path="/admin">
+            {isAdmin ? <Admin /> : <UnauthorizedAccess />}
+          </Route>
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function UnauthorizedAccess() {
+  return (
+    <div className="container mx-auto px-4 py-20 text-center">
+      <h1 className="text-4xl font-bold text-red-600 mb-4">Access Denied</h1>
+      <p className="text-lg text-gray-600 mb-8">
+        You don't have permission to access the admin panel.
+      </p>
+      <p className="text-sm text-gray-500">
+        Contact your administrator if you believe this is an error.
+      </p>
+    </div>
   );
 }
 

@@ -32,7 +32,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name").notNull(),
   password: varchar("password").notNull(),
   profileImageUrl: varchar("profile_image_url"),
-  userType: varchar("user_type").notNull().default("customer"), // customer, artist
+  userType: varchar("user_type").notNull().default("customer"), // customer, artist, admin
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

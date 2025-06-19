@@ -38,7 +38,7 @@ export default function Navbar() {
     { name: "Shop", href: "/shop" },
     { name: "Create", href: "/create" },
     { name: "Artists", href: "/artists" },
-    { name: "Admin", href: "/admin" },
+    ...(user?.userType === 'admin' ? [{ name: "Admin", href: "/admin" }] : []),
   ];
 
   const [location] = useLocation();

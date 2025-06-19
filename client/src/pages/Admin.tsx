@@ -10,13 +10,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Users, Package, Palette, ShoppingCart } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Package, Palette, ShoppingCart, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Admin() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Security check - this should be handled by routing but good to have
+  if (user?.userType !== 'admin') {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
+        <h1 className="text-4xl font-bold text-red-600 mb-4">Access Denied</h1>
+        <p className="text-lg text-gray-600">
+          Admin privileges required to access this panel.
+        </p>
+      </div>
+    );
+  }
 
   // Fetch admin data
   const { data: stats } = useQuery({
@@ -42,8 +57,14 @@ export default function Admin() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Badge variant="secondary">Platform Management</Badge>
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-gray-600 mt-1">Welcome back, {user?.firstName}</p>
+        </div>
+        <Badge variant="default" className="bg-blue-600">
+          <Shield className="h-4 w-4 mr-1" />
+          Admin Access
+        </Badge>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
