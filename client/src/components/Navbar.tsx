@@ -38,7 +38,7 @@ export default function Navbar() {
     { name: "Shop", href: "/shop" },
     { name: "Create", href: "/create" },
     { name: "Artists", href: "/artists" },
-    ...(user?.userType === 'admin' ? [{ name: "Admin", href: "/admin" }] : []),
+    ...((user as any)?.userType === 'admin' ? [{ name: "Admin", href: "/admin" }] : []),
   ];
 
   const [location] = useLocation();
@@ -117,7 +117,7 @@ export default function Navbar() {
                   <Button variant="ghost" size="sm">
                     <User className="h-5 w-5" />
                     <span className="ml-2 hidden sm:inline">
-                      {user?.firstName || "User"}
+                      {(user as any)?.firstName || "User"}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
