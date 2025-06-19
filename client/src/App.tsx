@@ -13,6 +13,7 @@ import Cart from "@/pages/Cart";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import Landing from "@/pages/Landing";
+import Admin from "@/pages/Admin";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import NotFound from "@/pages/not-found";
@@ -45,6 +46,7 @@ function Router() {
                 <Route path="/artists" component={Artists} />
                 <Route path="/profile" component={Profile} />
                 <Route path="/cart" component={Cart} />
+                <Route path="/admin" component={Admin} />
                 <Route component={NotFound} />
               </Switch>
             </main>

@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCartItemSchema, insertDesignSchema, categories, products } from "@shared/schema";
+import { insertCartItemSchema, insertDesignSchema, categories, products, users } from "@shared/schema";
 import { db } from "./db";
+import { sql, eq } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
 import bcrypt from "bcrypt";
@@ -341,6 +342,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error removing from cart:", error);
       res.status(500).json({ message: "Failed to remove from cart" });
+    }
+  });
+
+  // Admin routes (protected)
+  const isAdmin = (req: any, res: any, next: any) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    // For now, all authenticated users can access admin
+    // In production, you'd check for admin role
+    next();
+  };
+
+  app.get('/api/admin/stats', isAdmin, async (req, res) => {
+    try {
+      const totalUsers = await db.select({ count: sql`count(*)` }).from(users);
+      const totalProducts = await db.select({ count: sql`count(*)` }).from(products);
+      const totalCategories = await db.select({ count: sql`count(*)` }).from(categories);
+      
+      res.json({
+        totalUsers: totalUsers[0]?.count || 0,
+        totalProducts: totalProducts[0]?.count || 0,
+        totalCategories: totalCategories[0]?.count || 0,
+        totalDesigns: 0, // Will implement when designs table exists
+        totalArtists: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        newUsersThisWeek: 0,
+      });
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  app.get('/api/admin/users', isAdmin, async (req, res) => {
+    try {
+      const allUsers = await db.select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        userType: users.userType,
+        createdAt: users.createdAt,
+      }).from(users);
+      
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get('/api/admin/products', isAdmin, async (req, res) => {
+    try {
+      const allProducts = await db.select({
+        id: products.id,
+        name: products.name,
+        description: products.description,
+        basePrice: products.basePrice,
+        categoryId: products.categoryId,
+        categoryName: categories.name,
+      })
+      .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id));
+      
+      res.json(allProducts);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  app.post('/api/admin/products', isAdmin, async (req, res) => {
+    try {
+      const { name, description, categoryId, basePrice, imageUrl, customizationOptions } = req.body;
+      
+      const [product] = await db.insert(products).values({
+        name,
+        description,
+        categoryId,
+        basePrice,
+        imageUrl,
+        customizationOptions,
+      }).returning();
+      
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(500).json({ message: "Failed to create product" });
+    }
+  });
+
+  app.get('/api/admin/categories', isAdmin, async (req, res) => {
+    try {
+      const allCategories = await db.select().from(categories);
+      res.json(allCategories);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  app.get('/api/admin/orders', isAdmin, async (req, res) => {
+    try {
+      // For now return empty array since orders table might not have data
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ message: "Failed to fetch orders" });
     }
   });
 
