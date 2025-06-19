@@ -8,7 +8,7 @@ import {
   orders,
   orderItems,
   type User,
-  type UpsertUser,
+  type InsertUser,
   type Artist,
   type Category,
   type Product,
@@ -29,7 +29,7 @@ export interface IStorage {
   // Artist operations
   createArtist(artistData: typeof artists.$inferInsert): Promise<Artist>;
   getArtist(id: number): Promise<Artist | undefined>;
-  getArtistByUserId(userId: string): Promise<Artist | undefined>;
+  getArtistByUserId(userId: number): Promise<Artist | undefined>;
   getAllArtists(): Promise<Artist[]>;
   
   // Category operations
@@ -49,35 +49,33 @@ export interface IStorage {
   
   // Cart operations
   addToCart(cartData: typeof cartItems.$inferInsert): Promise<CartItem>;
-  getCartItems(userId: string): Promise<CartItem[]>;
+  getCartItems(userId: number): Promise<CartItem[]>;
   updateCartItem(id: number, quantity: number): Promise<void>;
   removeFromCart(id: number): Promise<void>;
-  clearCart(userId: string): Promise<void>;
+  clearCart(userId: number): Promise<void>;
   
   // Order operations
   createOrder(orderData: typeof orders.$inferInsert, items: typeof orderItems.$inferInsert[]): Promise<Order>;
-  getOrdersByUser(userId: string): Promise<Order[]>;
+  getOrdersByUser(userId: number): Promise<Order[]>;
   getOrder(id: number): Promise<Order | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
   // User operations
-  async getUser(id: string): Promise<User | undefined> {
+  async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
       .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
       .returning();
     return user;
   }
@@ -93,7 +91,7 @@ export class DatabaseStorage implements IStorage {
     return artist;
   }
 
-  async getArtistByUserId(userId: string): Promise<Artist | undefined> {
+  async getArtistByUserId(userId: number): Promise<Artist | undefined> {
     const [artist] = await db.select().from(artists).where(eq(artists.userId, userId));
     return artist;
   }
@@ -156,7 +154,7 @@ export class DatabaseStorage implements IStorage {
     return item;
   }
 
-  async getCartItems(userId: string): Promise<CartItem[]> {
+  async getCartItems(userId: number): Promise<CartItem[]> {
     return await db.select().from(cartItems).where(eq(cartItems.userId, userId));
   }
 
@@ -170,7 +168,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(cartItems).where(eq(cartItems.id, id));
   }
 
-  async clearCart(userId: string): Promise<void> {
+  async clearCart(userId: number): Promise<void> {
     await db.delete(cartItems).where(eq(cartItems.userId, userId));
   }
 
@@ -188,7 +186,7 @@ export class DatabaseStorage implements IStorage {
     return order;
   }
 
-  async getOrdersByUser(userId: string): Promise<Order[]> {
+  async getOrdersByUser(userId: number): Promise<Order[]> {
     return await db.select().from(orders)
       .where(eq(orders.userId, userId))
       .orderBy(desc(orders.createdAt));
