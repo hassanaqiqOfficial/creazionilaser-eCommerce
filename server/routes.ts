@@ -8,9 +8,6 @@ import path from "path";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import bcrypt from "bcrypt";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -209,6 +206,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/artists', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const artistData = { ...req.body, userId };
+      const artist = await storage.createArtist(artistData);
+      res.status(201).json(artist);
+    } catch (error) {
+      console.error("Error creating artist:", error);
+      res.status(500).json({ message: "Failed to create artist profile" });
+    }
+  });
+
+  app.get('/api/artists/me', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const artist = await storage.getArtistByUserId(userId);
+      res.json(artist);
+    } catch (error) {
+      console.error("Error fetching artist profile:", error);
+      res.status(500).json({ message: "Failed to fetch artist profile" });
+    }
+  });
+
   // Design routes
   app.get('/api/designs', async (req, res) => {
     try {
@@ -241,6 +261,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching design:", error);
       res.status(500).json({ message: "Failed to fetch design" });
+    }
+  });
+
+  app.post('/api/designs', isAuthenticated, upload.single('image'), async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      
+      // Get or create artist profile
+      let artist = await storage.getArtistByUserId(userId);
+      if (!artist) {
+        artist = await storage.createArtist({
+          userId,
+          bio: "New artist",
+          specialty: "General",
+          isVerified: false,
+          commissionRate: "0.30",
+        });
+      }
+
+      const designData = {
+        artistId: artist.id,
+        title: req.body.title,
+        description: req.body.description,
+        price: req.body.price,
+        tags: req.body.tags ? JSON.parse(req.body.tags) : [],
+        imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
+      };
+
+      const design = await storage.createDesign(designData);
+      res.status(201).json(design);
+    } catch (error) {
+      console.error("Error creating design:", error);
+      res.status(500).json({ message: "Failed to create design" });
+    }
+  });
+
+  // Cart routes (authenticated)
+  app.get('/api/cart', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const cartItems = await storage.getCartItems(userId);
+      res.json(cartItems);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+      res.status(500).json({ message: "Failed to fetch cart" });
+    }
+  });
+
+  app.post('/api/cart', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const cartData = { ...req.body, userId };
+      const item = await storage.addToCart(cartData);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      res.status(500).json({ message: "Failed to add to cart" });
+    }
+  });
+
+  app.put('/api/cart/:id', isAuthenticated, async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const { quantity } = req.body;
+      await storage.updateCartItem(itemId, quantity);
+      res.json({ message: "Cart item updated" });
+    } catch (error) {
+      console.error("Error updating cart item:", error);
+      res.status(500).json({ message: "Failed to update cart item" });
+    }
+  });
+
+  app.delete('/api/cart/:id', isAuthenticated, async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      await storage.removeFromCart(itemId);
+      res.json({ message: "Item removed from cart" });
+    } catch (error) {
+      console.error("Error removing from cart:", error);
+      res.status(500).json({ message: "Failed to remove from cart" });
     }
   });
 

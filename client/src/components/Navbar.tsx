@@ -40,6 +40,8 @@ export default function Navbar() {
     { name: "Artists", href: "/artists" },
   ];
 
+  const [location] = useLocation();
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -114,7 +116,7 @@ export default function Navbar() {
                   <Button variant="ghost" size="sm">
                     <User className="h-5 w-5" />
                     <span className="ml-2 hidden sm:inline">
-                      {user?.firstName}
+                      {user?.firstName || "User"}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
