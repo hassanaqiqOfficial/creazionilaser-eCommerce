@@ -2,14 +2,37 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
-import { ShoppingCart, Search, Menu, X } from "lucide-react";
+import { ShoppingCart, Search, Menu, X, User, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { user, isAuthenticated } = useAuth();
   const { getItemCount } = useCart();
-  const [location] = useLocation();
+  const [, setLocation] = useLocation();
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("/api/auth/logout", {
+        method: "POST",
+      });
+    },
+    onSuccess: () => {
+      setLocation("/");
+      window.location.reload(); // Refresh to clear auth state
+    },
+  });
 
   const navigation = [
     { name: "Shop", href: "/shop" },
@@ -83,6 +106,49 @@ export default function Navbar() {
             </Link>
 
 
+
+            {/* User Menu */}
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <User className="h-5 w-5" />
+                    <span className="ml-2 hidden sm:inline">
+                      {user?.firstName}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                      <User className="h-4 w-4 mr-2" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => logoutMutation.mutate()}
+                    disabled={logoutMutation.isPending}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="hidden sm:flex items-center space-x-2">
+                <Link href="/login">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button size="sm">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
 
             {/* Mobile menu button */}
             <Button

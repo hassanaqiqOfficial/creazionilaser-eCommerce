@@ -90,7 +90,7 @@ export const designs = pgTable("designs", {
 // Shopping cart items
 export const cartItems = pgTable("cart_items", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   productId: integer("product_id").references(() => products.id),
   designId: integer("design_id").references(() => designs.id),
   quantity: integer("quantity").notNull().default(1),
@@ -102,7 +102,7 @@ export const cartItems = pgTable("cart_items", {
 // Orders
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   orderNumber: varchar("order_number").notNull().unique(),
   status: varchar("status").notNull().default("pending"), // pending, processing, shipped, delivered, cancelled
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
