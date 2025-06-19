@@ -95,7 +95,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userType: isFirstUser ? 'admin' : 'customer',
       });
 
-      res.status(201).json({ message: "User created successfully", userId: user.id });
+      // Auto-login the user after successful signup
+      (req.session as any).userId = user.id;
+      
+      // Return user data (without password) and success message
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json({ 
+        message: isFirstUser ? "Admin account created successfully" : "User created successfully", 
+        ...userWithoutPassword 
+      });
     } catch (error) {
       console.error("Signup error:", error);
       res.status(500).json({ message: "Failed to create user" });

@@ -1,0 +1,80 @@
+WEBSITE STRUCTURE – E-COMMERCE + ARTIST COMMUNITY
+1. HOME PAGE
+Main elements:
+• Hero banner with featured products or new arrivals
+• Call to action: “Create Your Product” | “Discover the Artists”
+• Slider or grid with product categories
+• “How It Works” section (DTF, laser, vinyl, customization)
+• Artist showcase (3–4 featured designers)
+• Customer testimonials
+• Footer with quick links + social media + contacts
+2. SHOP / PRODUCT CATALOG
+Subcategories:
+• Customized T-shirts
+• Wooden Plaques
+• Stickers and Decals
+• Keychains
+• Event Decorations
+• Wooden Puzzles
+• Smartphone Cases
+• Artisan Labels
+• Lamps and Lights
+• Promotional Gadgets
+Each product has a detailed page:
+• Images
+• Customization options (upload design, text, color, material)
+• Price
+• Production/shipping times
+• “Add to Cart” button
+3. CREATE YOUR PRODUCT (Online Customizer)
+Interactive tool for customization:
+• Upload a file or choose artwork from the artist library
+• Select the product (e.g., t-shirt, puzzle, keychain…)
+• Add text (name, phrase, date…)
+• Real-time preview
+• “Add to Cart” button
+4. ARTIST SECTION – “ART GALLERY”
+Goal: Provide a space for artists to sell their designs.
+Subsections:
+• Discover the Artists: artist profiles with bios, social links, design showcase
+• Purchase Designs: marketplace of ready-to-print designs (filter by style, theme, color, artist)
+• Become an Artist: dedicated page with info for collaboration + sign-up form or portfolio
+upload
+Each artist can:
+• Upload their designs
+• Receive a percentage of sales
+• Have a personalized profile page
+• Be tagged on products purchased with their artwork
+5. SERVICE PAGES
+• How It Works (explanation of techniques: DTF, laser, vinyl…)
+• Gift Ideas (themed catalogs: birthdays, anniversaries, kids, companies)
+• Custom Quotes (form for companies or special events)
+• FAQ
+• Contacts
+• Privacy & Terms of Service
+6. USER ACCOUNT
+Features:
+• Order history
+• Shipping status
+• Saved projects / favorite designs
+• Manage personal data and addresses
+For artists:
+• Sales dashboard
+• Upload new designs
+• Manage bio and profile
+7. CHECKOUT AND PAYMENT
+• Cart
+• Quick checkout (guest or registered)
+• Shipping options (standard/express)
+• Secure payments (PayPal, credit card, bank transfer)
+• Apply discount codes or promotions
+8. CMS AND BACKEND (INTERNAL MANAGEMENT)
+To be included:
+• Admin area to manage orders, users, products, designs, and artists
+• Sales statistics dashboard
+• Artist management and design approval
+• Automatic notifications for customers and artists
+9. MOBILE VERSION + SEO + MULTILINGUAL
+• Optimized for smartphones and tablets
+• SEO structured for categories, designs, and artists
+• Multilingual (e.g., IT/EN if planning expansion)

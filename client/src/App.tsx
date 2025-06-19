@@ -48,10 +48,12 @@ function Router() {
 function AuthenticatedApp({ user }: { user: any }) {
   const isAdmin = user?.userType === 'admin';
 
-  // Auto-redirect admins to admin dashboard
-  if (isAdmin && window.location.pathname === '/') {
-    window.location.pathname = '/admin';
-  }
+  // Auto-redirect admins to admin dashboard on root path
+  React.useEffect(() => {
+    if (isAdmin && window.location.pathname === '/') {
+      window.location.href = '/admin';
+    }
+  }, [isAdmin]);
 
   return (
     <div className="min-h-screen flex flex-col">

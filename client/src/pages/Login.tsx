@@ -25,17 +25,22 @@ export default function Login() {
       });
     },
     onSuccess: (data: any) => {
+      // Invalidate the auth query to refetch user data
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
       
-      // Redirect based on user type
-      if (data?.userType === 'admin') {
-        setLocation("/admin");
-      } else {
-        setLocation("/");
-      }
+      // Small delay to ensure query invalidation completes
+      setTimeout(() => {
+        if (data?.userType === 'admin') {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = "/";
+        }
+      }, 100);
     },
     onError: (error: any) => {
       toast({
