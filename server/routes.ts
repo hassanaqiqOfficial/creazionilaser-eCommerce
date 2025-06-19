@@ -34,12 +34,24 @@ const isAuthenticated = (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
   const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false, // Don't recreate table/index
+    tableName: 'sessions',
+  });
+  
+  // Suppress error logging for existing index
+  const originalLog = console.error;
+  console.error = (...args) => {
+    if (args[0]?.message?.includes('IDX_session_expire') || 
+        args[0]?.toString?.()?.includes('IDX_session_expire')) {
+      return; // Ignore this specific error
+    }
+    originalLog.apply(console, args);
+  };
+  
   app.use(session({
-    store: new pgStore({
-      conString: process.env.DATABASE_URL,
-      createTableIfMissing: true,
-      errorLog: () => {}, // Suppress duplicate index errors
-    }),
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
     resave: false,
     saveUninitialized: false,
