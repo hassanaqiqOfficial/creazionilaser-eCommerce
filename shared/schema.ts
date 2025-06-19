@@ -135,7 +135,7 @@ export const insertOrderSchema = createInsertSchema(orders);
 export const insertOrderItemSchema = createInsertSchema(orderItems);
 
 // Types
-export type UpsertUser = typeof users.$inferInsert;
+export type InsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Artist = typeof artists.$inferSelect;
 export type Category = typeof categories.$inferSelect;

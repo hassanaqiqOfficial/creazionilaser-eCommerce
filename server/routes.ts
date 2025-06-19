@@ -5,6 +5,12 @@ import { insertCartItemSchema, insertDesignSchema, categories, products } from "
 import { db } from "./db";
 import multer from "multer";
 import path from "path";
+import bcrypt from "bcrypt";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import bcrypt from "bcrypt";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -19,9 +25,128 @@ const upload = multer({
   }
 });
 
+// Authentication middleware
+const isAuthenticated = (req: any, res: any, next: any) => {
+  if (req.session?.userId) {
+    return next();
+  }
+  res.status(401).json({ message: "Unauthorized" });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Session configuration
+  const pgStore = connectPg(session);
+  app.use(session({
+    store: new pgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+
   // Seed data on startup
   await seedData();
+
+  // Authentication routes
+  app.post('/api/auth/signup', async (req, res) => {
+    try {
+      const { firstName, lastName, email, password } = req.body;
+      
+      if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists with this email" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create user
+      const user = await storage.createUser({
+        email,
+        firstName,
+        lastName,
+        password: hashedPassword,
+      });
+
+      res.status(201).json({ message: "User created successfully", userId: user.id });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      // Find user
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Check password
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Set session
+      (req.session as any).userId = user.id;
+      
+      // Return user data (without password)
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    req.session?.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Could not log out" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
+  app.get('/api/auth/user', async (req: any, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Return user data (without password)
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ message: "Failed to get user" });
+    }
+  });
 
   // Category routes
   app.get('/api/categories', async (req, res) => {
