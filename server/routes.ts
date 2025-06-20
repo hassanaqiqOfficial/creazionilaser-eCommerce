@@ -521,9 +521,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Category CRUD operations
+  app.post("/api/admin/categories", isAdmin, async (req, res) => {
+    try {
+      const { name, description, slug } = req.body;
+      console.log("Creating category with data:", { name, description, slug });
+      
+      if (!name) {
+        return res.status(400).json({ message: "Category name is required" });
+      }
+
+      const [category] = await db.insert(categories).values({
+        name,
+        description: description || null,
+        slug: slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      }).returning();
+      
+      console.log("Created category:", category);
+      res.json(category);
+    } catch (error) {
+      console.error("Failed to create category:", error);
+      res.status(500).json({ message: "Failed to create category", error: error.message });
+    }
+  });
+
+  // Update category
+  app.put("/api/admin/categories/:id", isAdmin, async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      const { name, description, slug } = req.body;
+      console.log("Updating category:", categoryId, { name, description, slug });
+      
+      if (!name) {
+        return res.status(400).json({ message: "Category name is required" });
+      }
+
+      const [category] = await db.update(categories)
+        .set({
+          name,
+          description: description || null,
+          slug: slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        })
+        .where(eq(categories.id, categoryId))
+        .returning();
+      
+      console.log("Updated category:", category);
+      res.json(category);
+    } catch (error) {
+      console.error("Failed to update category:", error);
+      res.status(500).json({ message: "Failed to update category", error: error.message });
+    }
+  });
+
+  // Delete category (with cascade check)
+  app.delete("/api/admin/categories/:id", isAdmin, async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      console.log("Attempting to delete category with ID:", categoryId);
+      
+      // Check if there are products using this category
+      const productsInCategory = await db.select().from(products).where(eq(products.categoryId, categoryId));
+      console.log("Products in category:", productsInCategory.length);
+      
+      if (productsInCategory.length > 0) {
+        return res.status(400).json({ 
+          message: `Cannot delete category. ${productsInCategory.length} product(s) are using this category. Please delete or reassign the products first.`,
+          productsCount: productsInCategory.length
+        });
+      }
+      
+      const result = await db.delete(categories).where(eq(categories.id, categoryId));
+      console.log("Delete category result:", result);
+      
+      res.json({ message: "Category deleted successfully", categoryId, result });
+    } catch (error) {
+      console.error("Failed to delete category:", error);
+      res.status(500).json({ message: "Failed to delete category", error: error.message });
+    }
+  });
+
   app.get('/api/admin/categories', isAdmin, async (req, res) => {
     try {
-      const allCategories = await db.select().from(categories);
+      const allCategories = await db.select().from(categories).orderBy(categories.id);
+      console.log("Fetched categories:", allCategories.length);
       // Disable caching to ensure fresh data
       res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.set('Pragma', 'no-cache');
