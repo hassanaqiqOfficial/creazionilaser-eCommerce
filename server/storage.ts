@@ -42,6 +42,9 @@ export interface IStorage {
   getAllProducts(): Promise<Product[]>;
   getProductsByCategory(categoryId: number): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
+  createProduct(productData: typeof products.$inferInsert): Promise<Product>;
+  updateProduct(id: number, productData: Partial<typeof products.$inferInsert>): Promise<Product>;
+  deleteProduct(id: number): Promise<void>;
   
   // Design operations
   createDesign(designData: typeof designs.$inferInsert): Promise<Design>;

@@ -337,6 +337,7 @@ function UsersTab({ users }: { users?: any[] }) {
 function ProductsTab({ products, categories }: { products?: any[]; categories?: any[] }) {
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
 
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
@@ -354,6 +355,47 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
     onError: (error: any) => {
       toast({ 
         title: "Failed to create product",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, ...productData }: any) => {
+      return await apiRequest(`/api/admin/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      setEditingProduct(null);
+      toast({ title: "Product updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to update product",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      return await apiRequest(`/api/admin/products/${productId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      toast({ title: "Product deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to delete product",
         description: error.message,
         variant: "destructive"
       });
@@ -386,6 +428,24 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
             />
           </DialogContent>
         </Dialog>
+
+        {/* Edit Product Dialog */}
+        <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Product</DialogTitle>
+              <DialogDescription>Update product information</DialogDescription>
+            </DialogHeader>
+            {editingProduct && (
+              <ProductForm 
+                categories={categories} 
+                product={editingProduct}
+                onSubmit={(data) => updateProductMutation.mutate({ id: editingProduct.id, ...data })}
+                isLoading={updateProductMutation.isPending}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -406,16 +466,32 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
                   <TableCell>${product.basePrice}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEditingProduct(product)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="destructive" size="sm">
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => deleteProductMutation.mutate(product.id)}
+                        disabled={deleteProductMutation.isPending}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
+              {(!products || products.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                    No products yet. Add your first product to get started.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
@@ -424,17 +500,18 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
   );
 }
 
-function ProductForm({ categories, onSubmit, isLoading }: { 
+function ProductForm({ categories, product, onSubmit, isLoading }: { 
   categories?: any[]; 
+  product?: any;
   onSubmit: (data: any) => void;
   isLoading: boolean;
 }) {
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    categoryId: "",
-    basePrice: "",
-    imageUrl: "",
+    name: product?.name || "",
+    description: product?.description || "",
+    categoryId: product?.categoryId?.toString() || "",
+    basePrice: product?.basePrice || "",
+    imageUrl: product?.imageUrl || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -506,7 +583,7 @@ function ProductForm({ categories, onSubmit, isLoading }: {
       </div>
 
       <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? "Creating..." : "Create Product"}
+        {isLoading ? (product ? "Updating..." : "Creating...") : (product ? "Update Product" : "Create Product")}
       </Button>
     </form>
   );
@@ -637,33 +714,50 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
         </Dialog>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories?.map((category: any) => (
-            <Card key={category.id} className="border border-gray-200 hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{category.description}</p>
-                    <p className="text-xs text-gray-500 mt-2">Slug: {category.slug}</p>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => deleteCategoryMutation.mutate(category.id)}
-                    disabled={deleteCategoryMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {(!categories || categories.length === 0) && (
-            <div className="col-span-full text-center py-8 text-gray-500">
-              No categories yet. Create your first category to organize products.
-            </div>
-          )}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categories?.map((category: any) => (
+                <TableRow key={category.id}>
+                  <TableCell className="font-medium">{category.name}</TableCell>
+                  <TableCell>{category.description || 'No description'}</TableCell>
+                  <TableCell className="font-mono text-sm bg-gray-50 px-2 py-1 rounded">{category.slug}</TableCell>
+                  <TableCell>{new Date(category.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteCategoryMutation.mutate(category.id)}
+                        disabled={deleteCategoryMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(!categories || categories.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    No categories yet. Create your first category to organize products.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>
