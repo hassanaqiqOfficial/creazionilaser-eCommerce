@@ -378,11 +378,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const user = await storage.getUser(req.session.userId);
-      if (!user || user.userType !== 'admin') {
+      if (!user || (user as any).userType !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
+      req.user = user; // Add user to request object
       next();
     } catch (error) {
+      console.error("Admin auth error:", error);
       return res.status(500).json({ message: "Authentication error" });
     }
   };

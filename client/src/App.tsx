@@ -14,7 +14,7 @@ import Cart from "@/pages/Cart";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import Landing from "@/pages/Landing";
-import SimpleAdmin from "@/pages/SimpleAdmin";
+import AdminDashboard from "@/pages/AdminDashboard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import NotFound from "@/pages/not-found";
@@ -31,7 +31,7 @@ function Router() {
     );
   }
 
-  console.log("Router - isAuthenticated:", isAuthenticated, "user:", user);
+  // Debug logging removed for production
 
   return (
     <Switch>
@@ -42,7 +42,7 @@ function Router() {
           <div className="min-h-screen flex flex-col">
             <Navbar />
             <main className="flex-1">
-              <SimpleAdmin />
+              <AdminDashboard />
             </main>
             <Footer />
           </div>
@@ -81,13 +81,13 @@ function AuthenticatedApp({ user }: { user: any }) {
       <Navbar />
       <main className="flex-1">
         <Switch>
-          <Route path="/" component={isAdmin ? SimpleAdmin : Home} />
+          <Route path="/" component={isAdmin ? AdminDashboard : Home} />
           <Route path="/shop" component={Shop} />
           <Route path="/create" component={Create} />
           <Route path="/artists" component={Artists} />
           <Route path="/profile" component={Profile} />
           <Route path="/cart" component={Cart} />
-          <Route path="/admin" component={SimpleAdmin} />
+          <Route path="/admin" component={AdminDashboard} />
           <Route component={NotFound} />
         </Switch>
       </main>
