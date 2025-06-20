@@ -349,6 +349,7 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/products"] });
       setIsCreateOpen(false);
       toast({ title: "Product created successfully" });
     },
@@ -371,6 +372,7 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/products"] });
       setEditingProduct(null);
       toast({ title: "Product updated successfully" });
     },
@@ -391,6 +393,7 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/products"] });
       toast({ title: "Product deleted successfully" });
     },
     onError: (error: any) => {
@@ -657,6 +660,7 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/categories"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/categories"] });
       setIsCreateOpen(false);
       toast({ title: "Category created successfully" });
     },
@@ -679,6 +683,7 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/categories"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/categories"] });
       setEditingCategory(null);
       toast({ title: "Category updated successfully" });
     },
@@ -699,6 +704,7 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/categories"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/categories"] });
       toast({ title: "Category deleted successfully" });
     },
     onError: (error: any) => {

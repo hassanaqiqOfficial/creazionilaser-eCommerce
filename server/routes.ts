@@ -442,6 +442,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .from(products)
       .leftJoin(categories, eq(products.categoryId, categories.id));
       
+      // Disable caching to ensure fresh data
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
       res.json(allProducts);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -453,12 +457,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name, description, categoryId, basePrice, imageUrl, customizationOptions } = req.body;
       
+      if (!name || !categoryId || !basePrice) {
+        return res.status(400).json({ message: "Name, category, and price are required" });
+      }
+      
       const [product] = await db.insert(products).values({
         name,
-        description,
-        categoryId,
+        description: description || null,
+        categoryId: parseInt(categoryId),
         basePrice,
-        imageUrl,
+        imageUrl: imageUrl || null,
         customizationOptions,
       }).returning();
       
@@ -469,9 +477,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update product
+  app.put("/api/admin/products/:id", isAdmin, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const { name, description, categoryId, basePrice, imageUrl } = req.body;
+      
+      if (!name || !categoryId || !basePrice) {
+        return res.status(400).json({ message: "Name, category, and price are required" });
+      }
+
+      const [product] = await db.update(products)
+        .set({
+          name,
+          description: description || null,
+          categoryId: parseInt(categoryId),
+          basePrice,
+          imageUrl: imageUrl || null,
+        })
+        .where(eq(products.id, productId))
+        .returning();
+      
+      res.json(product);
+    } catch (error) {
+      console.error("Failed to update product:", error);
+      res.status(500).json({ message: "Failed to update product" });
+    }
+  });
+
+  // Delete product
+  app.delete("/api/admin/products/:id", isAdmin, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      await db.delete(products).where(eq(products.id, productId));
+      res.json({ message: "Product deleted successfully" });
+    } catch (error) {
+      console.error("Failed to delete product:", error);
+      res.status(500).json({ message: "Failed to delete product" });
+    }
+  });
+
   app.get('/api/admin/categories', isAdmin, async (req, res) => {
     try {
       const allCategories = await db.select().from(categories);
+      // Disable caching to ensure fresh data
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
       res.json(allCategories);
     } catch (error) {
       console.error("Error fetching categories:", error);
