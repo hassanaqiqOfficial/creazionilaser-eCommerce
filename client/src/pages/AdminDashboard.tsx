@@ -57,6 +57,7 @@ export default function AdminDashboard() {
   const sidebarItems = [
     { id: "overview", label: "Overview", icon: BarChart3 },
     { id: "users", label: "Users", icon: Users },
+    { id: "categories", label: "Categories", icon: Package },
     { id: "products", label: "Products", icon: Package },
     { id: "orders", label: "Orders", icon: ShoppingCart },
     { id: "settings", label: "Settings", icon: Settings },
@@ -171,6 +172,7 @@ export default function AdminDashboard() {
         <div className="flex-1 overflow-auto bg-gray-50 p-6">
           {activeTab === "overview" && <OverviewTab stats={stats} />}
           {activeTab === "users" && <UsersTab users={users} />}
+          {activeTab === "categories" && <CategoriesTab categories={categories} />}
           {activeTab === "products" && <ProductsTab products={products} categories={categories} />}
           {activeTab === "orders" && <OrdersTab orders={orders} />}
           {activeTab === "settings" && <SettingsTab />}
@@ -560,6 +562,180 @@ function OrdersTab({ orders }: { orders?: any[] }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function CategoriesTab({ categories }: { categories?: any[] }) {
+  const { toast } = useToast();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  const createCategoryMutation = useMutation({
+    mutationFn: async (categoryData: any) => {
+      return await apiRequest("/api/admin/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(categoryData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/categories"] });
+      setIsCreateOpen(false);
+      toast({ title: "Category created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to create category",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (categoryId: number) => {
+      return await apiRequest(`/api/admin/categories/${categoryId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/categories"] });
+      toast({ title: "Category deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to delete category",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Category Management</CardTitle>
+          <CardDescription>Organize your products with categories</CardDescription>
+        </div>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Category
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Create New Category</DialogTitle>
+              <DialogDescription>Add a new product category</DialogDescription>
+            </DialogHeader>
+            <CategoryForm 
+              onSubmit={(data) => createCategoryMutation.mutate(data)}
+              isLoading={createCategoryMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {categories?.map((category: any) => (
+            <Card key={category.id} className="border border-gray-200 hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                    <p className="text-xs text-gray-500 mt-2">Slug: {category.slug}</p>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteCategoryMutation.mutate(category.id)}
+                    disabled={deleteCategoryMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {(!categories || categories.length === 0) && (
+            <div className="col-span-full text-center py-8 text-gray-500">
+              No categories yet. Create your first category to organize products.
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CategoryForm({ onSubmit, isLoading }: { 
+  onSubmit: (data: any) => void;
+  isLoading: boolean;
+}) {
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    slug: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      ...formData,
+      slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+    });
+  };
+
+  // Auto-generate slug from name
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    setFormData({ 
+      ...formData, 
+      name,
+      slug: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Category Name</Label>
+        <Input
+          id="name"
+          value={formData.name}
+          onChange={handleNameChange}
+          placeholder="e.g., Custom T-Shirts"
+          required
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Brief description of this category"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="slug">URL Slug</Label>
+        <Input
+          id="slug"
+          value={formData.slug}
+          onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+          placeholder="auto-generated from name"
+        />
+        <p className="text-xs text-gray-500 mt-1">Used in URLs, auto-generated if left empty</p>
+      </div>
+
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading ? "Creating..." : "Create Category"}
+      </Button>
+    </form>
   );
 }
 

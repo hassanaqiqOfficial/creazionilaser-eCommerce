@@ -35,6 +35,8 @@ export interface IStorage {
   // Category operations
   getAllCategories(): Promise<Category[]>;
   getCategoryBySlug(slug: string): Promise<Category | undefined>;
+  createCategory(categoryData: typeof categories.$inferInsert): Promise<Category>;
+  deleteCategory(id: number): Promise<void>;
   
   // Product operations
   getAllProducts(): Promise<Product[]>;

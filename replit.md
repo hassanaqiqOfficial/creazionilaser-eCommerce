@@ -61,6 +61,8 @@ A full-stack e-commerce platform that combines custom product creation with an a
 - 2024-12-19: Artist marketplace functionality added
 - 2024-12-19: Professional admin dashboard with responsive sidebar navigation
 - 2024-12-19: Admin panel with working CRUD operations for users, products, and orders
+- 2024-12-19: Category management system added with full CRUD operations
+- 2024-12-19: Categories integrated into product forms and shop filtering
 
 ## User Preferences
 - User prefers comprehensive functionality over simplified versions
