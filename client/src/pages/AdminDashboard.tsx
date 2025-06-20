@@ -63,7 +63,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -73,22 +73,22 @@ export default function AdminDashboard() {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b">
-          <h1 className="text-xl font-bold text-gray-800">Admin Panel</h1>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
+          <h1 className="text-xl font-bold text-white">Admin Panel</h1>
           <Button
             variant="ghost"
             size="sm"
-            className="lg:hidden"
+            className="lg:hidden text-white hover:bg-blue-800"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
         
-        <nav className="mt-6">
+        <nav className="mt-2">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -98,48 +98,77 @@ export default function AdminDashboard() {
                   setActiveTab(item.id);
                   setSidebarOpen(false);
                 }}
-                className={`w-full flex items-center px-6 py-3 text-left hover:bg-gray-100 transition-colors ${
-                  activeTab === item.id ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' : 'text-gray-600'
+                className={`w-full flex items-center px-6 py-4 text-left transition-all duration-200 ${
+                  activeTab === item.id 
+                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-600 font-medium' 
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <Icon className="h-5 w-5 mr-3" />
+                <Icon className={`h-5 w-5 mr-3 ${activeTab === item.id ? 'text-blue-600' : 'text-gray-500'}`} />
                 {item.label}
               </button>
             );
           })}
         </nav>
 
-        <div className="absolute bottom-6 left-6 right-6">
-          <div className="bg-gray-100 rounded-lg p-4">
-            <p className="text-sm font-medium text-gray-800">{(user as any)?.firstName} {(user as any)?.lastName}</p>
-            <p className="text-xs text-gray-600">{(user as any)?.email}</p>
-            <Badge variant="default" className="mt-2 text-xs">Administrator</Badge>
+        <div className="absolute bottom-6 left-4 right-4">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">
+                  {(user as any)?.firstName?.[0]}{(user as any)?.lastName?.[0]}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {(user as any)?.firstName} {(user as any)?.lastName}
+                </p>
+                <p className="text-xs text-gray-600 truncate">{(user as any)?.email}</p>
+              </div>
+            </div>
+            <Badge variant="default" className="mt-3 w-full justify-center bg-blue-600 hover:bg-blue-700">
+              Administrator
+            </Badge>
           </div>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="lg:ml-64">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-6">
+        <div className="bg-white shadow-sm border-b border-gray-200 h-16 flex items-center justify-between px-6">
           <div className="flex items-center">
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden mr-4"
+              className="lg:hidden mr-4 hover:bg-gray-100"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h2 className="text-2xl font-bold text-gray-800 capitalize">{activeTab}</h2>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 capitalize">{activeTab}</h2>
+              <p className="text-sm text-gray-600">Manage your platform from here</p>
+            </div>
           </div>
-          <div className="text-sm text-gray-600">
-            Welcome back, {(user as any)?.firstName}!
+          <div className="hidden md:flex items-center space-x-4">
+            <div className="text-right">
+              <p className="text-sm font-medium text-gray-900">Welcome back!</p>
+              <p className="text-xs text-gray-600">{(user as any)?.firstName} {(user as any)?.lastName}</p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.location.href = '/api/auth/logout'}
+              className="hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+            >
+              Logout
+            </Button>
           </div>
         </div>
 
         {/* Content area */}
-        <div className="p-6">
+        <div className="flex-1 overflow-auto bg-gray-50 p-6">
           {activeTab === "overview" && <OverviewTab stats={stats} />}
           {activeTab === "users" && <UsersTab users={users} />}
           {activeTab === "products" && <ProductsTab products={products} categories={categories} />}
@@ -156,53 +185,53 @@ function OverviewTab({ stats }: { stats?: any }) {
     <div className="space-y-6">
       {/* Stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-lg">
+            <CardTitle className="text-sm font-medium text-blue-800">Total Users</CardTitle>
+            <Users className="h-5 w-5 text-blue-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="pt-4">
+            <div className="text-3xl font-bold text-blue-700">{stats?.totalUsers || 0}</div>
+            <p className="text-xs text-gray-600 mt-1">
               +{stats?.newUsersThisWeek || 0} this week
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-green-50 to-green-100 rounded-t-lg">
+            <CardTitle className="text-sm font-medium text-green-800">Products</CardTitle>
+            <Package className="h-5 w-5 text-green-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalProducts || 0}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="pt-4">
+            <div className="text-3xl font-bold text-green-700">{stats?.totalProducts || 0}</div>
+            <p className="text-xs text-gray-600 mt-1">
               {stats?.totalCategories || 0} categories
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
+            <CardTitle className="text-sm font-medium text-purple-800">Total Orders</CardTitle>
+            <ShoppingCart className="h-5 w-5 text-purple-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="pt-4">
+            <div className="text-3xl font-bold text-purple-700">{stats?.totalOrders || 0}</div>
+            <p className="text-xs text-gray-600 mt-1">
               ${stats?.totalRevenue || 0} revenue
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Artist Designs</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-orange-50 to-orange-100 rounded-t-lg">
+            <CardTitle className="text-sm font-medium text-orange-800">Artist Designs</CardTitle>
+            <BarChart3 className="h-5 w-5 text-orange-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalDesigns || 0}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="pt-4">
+            <div className="text-3xl font-bold text-orange-700">{stats?.totalDesigns || 0}</div>
+            <p className="text-xs text-gray-600 mt-1">
               From {stats?.totalArtists || 0} artists
             </p>
           </CardContent>
