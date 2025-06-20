@@ -509,11 +509,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/products/:id", isAdmin, async (req, res) => {
     try {
       const productId = parseInt(req.params.id);
-      await db.delete(products).where(eq(products.id, productId));
-      res.json({ message: "Product deleted successfully" });
+      console.log("Attempting to delete product with ID:", productId);
+      
+      const result = await db.delete(products).where(eq(products.id, productId));
+      console.log("Delete result:", result);
+      
+      res.json({ message: "Product deleted successfully", productId });
     } catch (error) {
       console.error("Failed to delete product:", error);
-      res.status(500).json({ message: "Failed to delete product" });
+      res.status(500).json({ message: "Failed to delete product", error: error.message });
     }
   });
 

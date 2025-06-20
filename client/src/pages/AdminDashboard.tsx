@@ -479,7 +479,11 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
                       <Button 
                         variant="destructive" 
                         size="sm"
-                        onClick={() => deleteProductMutation.mutate(product.id)}
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
+                            deleteProductMutation.mutate(product.id);
+                          }
+                        }}
                         disabled={deleteProductMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -708,9 +712,18 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
       toast({ title: "Category deleted successfully" });
     },
     onError: (error: any) => {
+      let errorMessage = error.message;
+      
+      // Check if it's a constraint violation
+      if (error.message.includes("product(s) are using this category")) {
+        errorMessage = error.message;
+      } else if (error.message.includes("violates foreign key constraint")) {
+        errorMessage = "Cannot delete category. Products are still using this category.";
+      }
+      
       toast({ 
-        title: "Failed to delete category",
-        description: error.message,
+        title: "Cannot Delete Category",
+        description: errorMessage,
         variant: "destructive"
       });
     },
@@ -773,7 +786,11 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => deleteCategoryMutation.mutate(category.id)}
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to delete "${category.name}"? This action cannot be undone.`)) {
+                            deleteCategoryMutation.mutate(category.id);
+                          }
+                        }}
                         disabled={deleteCategoryMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
