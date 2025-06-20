@@ -645,6 +645,7 @@ function OrdersTab({ orders }: { orders?: any[] }) {
 function CategoriesTab({ categories }: { categories?: any[] }) {
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
 
   const createCategoryMutation = useMutation({
     mutationFn: async (categoryData: any) => {
@@ -662,6 +663,28 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
     onError: (error: any) => {
       toast({ 
         title: "Failed to create category",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, ...categoryData }: any) => {
+      return await apiRequest(`/api/admin/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(categoryData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/categories"] });
+      setEditingCategory(null);
+      toast({ title: "Category updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to update category",
         description: error.message,
         variant: "destructive"
       });
@@ -734,7 +757,11 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
                   <TableCell>{new Date(category.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEditingCategory(category)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
@@ -764,14 +791,15 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
   );
 }
 
-function CategoryForm({ onSubmit, isLoading }: { 
+function CategoryForm({ category, onSubmit, isLoading }: { 
+  category?: any;
   onSubmit: (data: any) => void;
   isLoading: boolean;
 }) {
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    slug: "",
+    name: category?.name || "",
+    description: category?.description || "",
+    slug: category?.slug || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -827,7 +855,7 @@ function CategoryForm({ onSubmit, isLoading }: {
       </div>
 
       <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? "Creating..." : "Create Category"}
+        {isLoading ? (category ? "Updating..." : "Creating...") : (category ? "Update Category" : "Create Category")}
       </Button>
     </form>
   );
