@@ -56,10 +56,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Set to false for development
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+    },
+    name: 'connect.sid'
   }));
 
   // Seed data on startup
@@ -97,6 +98,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Auto-login the user after successful signup
       (req.session as any).userId = user.id;
+      console.log("Signup - Set session userId:", user.id);
+      
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+        } else {
+          console.log("Session saved successfully");
+        }
+      });
       
       // Return user data (without password) and success message
       const { password: _, ...userWithoutPassword } = user;
@@ -132,6 +143,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Set session
       (req.session as any).userId = user.id;
+      console.log("Login - Set session userId:", user.id);
+      
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+        } else {
+          console.log("Session saved successfully");
+        }
+      });
       
       // Return user data (without password)
       const { password: _, ...userWithoutPassword } = user;
