@@ -62,7 +62,7 @@ app.use((req, res, next) => {
 
   // Use PORT environment variable for production deployment (Render)
   // Default to 5000 for local development
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = parseInt(process.env.PORT || "78698", 10);
   server.listen({
     port,
     host: "localhost",
