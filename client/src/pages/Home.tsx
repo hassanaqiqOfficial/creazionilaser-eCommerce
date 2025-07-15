@@ -2,12 +2,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import { Star, ArrowRight, Users, Palette, ShoppingBag, Zap } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import ArtistCard from "@/components/ArtistCard";
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
+
 
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/categories"],
@@ -21,6 +24,11 @@ export default function Home() {
     queryKey: ["/api/artists"],
   });
 
+  const { data: artist } = useQuery({
+    queryKey: ["/api/artists/me"],
+    enabled: isAuthenticated,
+  });
+  
   const featuredProducts = products.slice(0, 4);
   const featuredArtists = artists.slice(0, 3);
 
@@ -49,7 +57,7 @@ export default function Home() {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="border-white text-white hover:bg-white hover:text-primary"
+                  className="border-white text-white hover:bg-white text-gray-900"
                   onClick={() => setLocation("/artists")}
                 >
                   Discover Artists
@@ -241,17 +249,21 @@ export default function Home() {
             >
               Start Designing Now
             </Button>
-            <Button 
-              size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-primary"
-              onClick={() => setLocation("/artists")}
-            >
-              Become an Artist
-            </Button>
+            {!artist &&(
+              <Button 
+                size="lg"
+                variant="outline"
+                className="border-white text-white hover:bg-white text-gray-900"
+                onClick={() => setLocation("/become-an-artist")}
+              >
+                Become an Artist
+              </Button>
+            )}
+            
           </div>
         </div>
       </section>
+      
     </div>
   );
 }

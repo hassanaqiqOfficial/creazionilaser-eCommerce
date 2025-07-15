@@ -24,7 +24,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     addToCart({
       productId: product.id,
       quantity: 1,
-      price: product.basePrice,
+      basePrice: product.basePrice,
       customization: {},
     });
     
@@ -63,7 +63,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
               {product.name}
             </h3>
-            <Badge variant="secondary" className="ml-2">
+            <Badge variant="primary" className="ml-2">
               ${product.basePrice}
             </Badge>
           </div>
@@ -115,7 +115,8 @@ export default function ProductCard({ product }: ProductCardProps) {
               handleAddToCart();
             }}
           >
-            Add to Cart - ${product.basePrice}
+            Add to Cart
+            <ShoppingCart className="h-4 w-4 mr-2" />
           </Button>
         </div>
       </CardContent>

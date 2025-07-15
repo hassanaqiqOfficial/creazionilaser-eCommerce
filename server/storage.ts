@@ -17,8 +17,9 @@ import {
   type Order,
   type OrderItem,
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { db, pool } from "./db";
+import { eq, desc, and, sql,Query } from "drizzle-orm";
+import { on } from "events";
 
 export interface IStorage {
   // User operations
@@ -88,6 +89,7 @@ export class DatabaseStorage implements IStorage {
 
   // Artist operations
   async createArtist(artistData: typeof artists.$inferInsert): Promise<Artist> {
+ 
     const [artist] = await db.insert(artists).values(artistData).returning();
     return artist;
   }
@@ -98,12 +100,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getArtistByUserId(userId: number): Promise<Artist | undefined> {
-    const [artist] = await db.select().from(artists).where(eq(artists.userId, userId));
-    return artist;
+    
+    // const [artist] = await db.select().from(artists).where(eq(artists.userId, userId));
+    // return artist;
+    
+    const sqlString = 'SELECT users.first_name,users.last_name,users.email,users.profile_image_url,artists.id,artists.user_id,artists.commission_rate AS commissionRate,artists.bio,artists.specialty,artists.social_links AS socialLinks,artists.created_at AS createdAt,artists.portfolio FROM artists INNER JOIN users ON artists.user_id = users.id WHERE artists.user_id = '+userId+';'; 
+    const artist = await pool.query(sqlString);
+
+    return artist.rows[0];
+
   }
 
   async getAllArtists(): Promise<Artist[]> {
-    return await db.select().from(artists).where(eq(artists.isVerified, true));
+
+  const allArtists = await db.select({
+        id: users.id,
+        artistId : artists.id,
+        specialty : artists.specialty,
+        biography : artists.bio,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        isVerified : artists.isVerified,
+        isBlocked : artists.isBlocked,
+        socialLinks : artists.socialLinks,
+        imageUrl : users.profileImageUrl,
+        userType: users.userType,
+        createdAt: users.createdAt,
+      }).from(artists).innerJoin(users, eq(artists.userId , users.id));
+      
+   return allArtists; 
+   
   }
 
   // Category operations

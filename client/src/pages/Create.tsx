@@ -10,6 +10,7 @@ import ProductCustomizer from "@/components/ProductCustomizer";
 import { Upload, Palette, Type, Eye } from "lucide-react";
 
 export default function Create() {
+
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedDesign, setSelectedDesign] = useState<any>(null);
   const [customText, setCustomText] = useState("");
@@ -42,7 +43,7 @@ export default function Create() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Create Your Product</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Customize Your Product</h1>
         <p className="text-xl text-gray-600">Experience our intuitive design tool</p>
       </div>
 
@@ -225,6 +226,7 @@ export default function Create() {
             </CardContent>
           </Card>
         </div>
+
       </div>
     </div>
   );

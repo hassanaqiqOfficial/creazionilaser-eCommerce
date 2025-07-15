@@ -30,7 +30,7 @@ export default function ProductCustomizer({
   color,
   size,
 }: ProductCustomizerProps) {
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (uploadedFile) {

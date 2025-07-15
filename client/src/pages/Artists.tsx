@@ -1,24 +1,35 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, UserPlus, Star } from "lucide-react";
 import ArtistCard from "@/components/ArtistCard";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
 export default function Artists() {
+
   const [searchQuery, setSearchQuery] = useState("");
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+
+  const { data: artist } = useQuery({
+    queryKey: ["/api/artists/me"],
+    enabled: isAuthenticated,
+  });
 
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ["/api/artists"],
   });
 
   const filteredArtists = artists.filter((artist: any) =>
+    
     artist.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    artist.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     artist.specialty?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -48,30 +59,33 @@ export default function Artists() {
         <p className="text-xl text-gray-600 mb-8">
           Discover amazing artwork from our creative community
         </p>
-        
-        {isAuthenticated && (
-          <Button 
-            size="lg"
-            className="bg-secondary hover:bg-secondary/90"
-            onClick={() => setLocation("/profile")}
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Become an Artist
-          </Button>
-        )}
+       
       </div>
 
       {/* Search */}
-      <div className="mb-8">
-        <div className="relative max-w-md mx-auto">
+      <div className="mb-8 flex items-center justify-between">
+
+        <div className="relative max-w-md">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search artists by specialty..."
+            placeholder="Search artists by speciality..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
+
+        {isAuthenticated && !artist && (
+          <Button 
+            size="lg"
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => setLocation("/become-an-artist")}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Become an Artist
+          </Button>
+        )}
+
       </div>
 
       {/* Stats */}
@@ -80,13 +94,13 @@ export default function Artists() {
           <Card>
             <CardContent className="p-6 text-center">
               <div className="text-3xl font-bold text-primary mb-2">{artists.length}</div>
-              <div className="text-gray-600">Active Artists</div>
+              <div className="text-gray-600">Our Artists Community</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6 text-center">
               <div className="text-3xl font-bold text-secondary mb-2">1.2K+</div>
-              <div className="text-gray-600">Designs Available</div>
+              <div className="text-gray-600">Elegant Artwork Collection</div>
             </CardContent>
           </Card>
           <Card>
@@ -144,18 +158,19 @@ export default function Artists() {
               <div className="text-sm text-blue-100">To Join</div>
             </div>
           </div>
-          {isAuthenticated && (
+          {isAuthenticated && !artist &&(
             <Button 
               size="lg"
               variant="outline"
-              className="border-white text-white hover:bg-white hover:text-primary"
-              onClick={() => setLocation("/profile")}
+              className="border-white text-white text-gray-900 hover:bg-white hover:text-primary"
+              onClick={() => setLocation("/become-an-artist")}
             >
-              Get Started Today
+              Join Now
             </Button>
           )}
         </div>
       </div>
     </div>
   );
+
 }

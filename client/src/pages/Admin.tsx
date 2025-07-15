@@ -295,6 +295,7 @@ function ProductForm({ categories, onSubmit, isLoading }: {
   onSubmit: (data: any) => void;
   isLoading: boolean;
 }) {
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",

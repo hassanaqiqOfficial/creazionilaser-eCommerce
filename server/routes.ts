@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCartItemSchema, insertDesignSchema, categories, products, users } from "@shared/schema";
-import { db } from "./db";
+import { insertCartItemSchema, insertDesignSchema, categories, products, users, artists } from "@shared/schema";
+import { db,pool } from "./db";
 import { sql, eq } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
@@ -141,8 +141,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      const artist = await storage.getArtistByUserId(user.id);
+
       // Set session
       (req.session as any).userId = user.id;
+      if(artist)
+        (req.session as any).artistId = artist.id;
+ 
       console.log("Login - Set session userId:", user.id);
       
       // Save session explicitly
@@ -168,6 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(500).json({ message: "Could not log out" });
       }
+     
       res.json({ message: "Logged out successfully" });
     });
   });
@@ -253,16 +259,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/artists', isAuthenticated, async (req: any, res) => {
+  app.post('/api/artists', isAuthenticated,upload.single('image'), async (req: any, res) => {
+    
     try {
-      const userId = req.session.userId;
-      const artistData = { ...req.body, userId };
+      
+        const userId = req.session.userId;
+      
+        const artistData = {
+          userId,
+          bio: req.body.bio,
+          specialty: req.body.specialty,
+          socialLinks: {
+            website: req.body.website,
+            instagram: req.body.instagram,
+          },
+          portfolio : req.file ? `/uploads/${req.file.filename}` : null,
+      };
+
       const artist = await storage.createArtist(artistData);
       res.status(201).json(artist);
+
+      // const userType = "artist";
+      // const [user] = await db.update(users)
+      //   .set({ user_type : userType,})
+      //   .where(eq(users.id, userId))
+      //   .returning();
+
     } catch (error) {
       console.error("Error creating artist:", error);
       res.status(500).json({ message: "Failed to create artist profile" });
     }
+  });
+
+  app.put("/api/artists/:id/", isAuthenticated, async (req, res) => {
+
+    try {
+      const userId = parseInt(req.params.id);
+      const { is_block} = req.params.is_block;
+      
+      const [user] = await db.update(users)
+        .set({
+          is_block,
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      res.json(user);
+      console.log("Blocked user successfully:");
+      res.json({ message: "user blocked successfully", userId });
+
+    } catch (error) {
+      console.error("Failed to block user:", error);
+      res.status(500).json({ message: "Failed to block user" });
+    }
+
   });
 
   app.get('/api/artists/me', isAuthenticated, async (req: any, res) => {
@@ -278,16 +328,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Design routes
   app.get('/api/designs', async (req, res) => {
+
     try {
       const { artist } = req.query;
       let designs;
-      
       if (artist) {
         designs = await storage.getDesignsByArtist(parseInt(artist as string));
       } else {
         designs = await storage.getAllDesigns();
       }
-      
       res.json(designs);
     } catch (error) {
       console.error("Error fetching designs:", error);
@@ -312,10 +361,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/designs', isAuthenticated, upload.single('image'), async (req: any, res) => {
+    
     try {
       const userId = req.session.userId;
       
       // Get or create artist profile
+
       let artist = await storage.getArtistByUserId(userId);
       if (!artist) {
         artist = await storage.createArtist({
@@ -391,6 +442,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Services Routes (Inauthenticated)
+  app.post('/api/quotes', isAuthenticated, async (req: any, res) => {
+    console.log('Hello@');
+    // try {
+    //   const userId = req.session.userId;
+    //   const cartData = { ...req.body, userId };
+    //   const item = await storage.addToCart(cartData);
+    //   res.status(201).json(item);
+    // } catch (error) {
+    //   console.error("Error adding to cart:", error);
+    //   res.status(500).json({ message: "Failed to add to cart" });
+    // }
+  });
+
   // Admin routes (protected)
   const isAdmin = async (req: any, res: any, next: any) => {
     if (!req.session?.userId) {
@@ -441,12 +506,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: users.email,
         userType: users.userType,
         createdAt: users.createdAt,
-      }).from(users);
+      }).from(users).where(eq(users.isBlocked, 0));
       
       res.json(allUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post('/api/admin/users', isAdmin, async (req, res) => {
+    try {
+    
+      const {fname, lname, email,password,} = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists with this email" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const [user] = await db.insert(users).values({
+        firstName :fname,
+        lastName : lname || null,
+        email ,
+        password: hashedPassword,      
+      }).returning();
+
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Error creating new user:", error);
+      res.status(500).json({ message: "Failed to create new user." });
+    }
+  });
+
+  app.put("/api/admin/users/:id", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const {fname,lname,email} = req.body;
+      await db.update(users)
+        .set({
+          firstName :fname,
+          lastName : lname || null,
+          email ,
+        })
+        .where(eq(users.id, userId))
+      
+      console.log("Successfully updated user");
+      res.json({ message: "Successfully updated user", userId });
+
+    } catch (error) {
+      console.error("Failed to update user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.put("/api/admin/users/:id/:isBlock", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const isBlock = parseInt(req.params.isBlock);
+      const {fname,lname,email} = req.body;
+      await db.update(users)
+        .set({isBlocked :isBlock,})
+        .where(eq(users.id, userId))
+      
+      console.log("Successfully blocked user");
+      res.json({ message: "Successfully blocked user", userId });
+
+    } catch (error) {
+      console.error("Failed to blocked user:", error);
+      res.status(500).json({ message: "Failed to blocked user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      console.log("Attempting to delete user with ID:", userId);
+      
+      const result = await db.delete(users).where(eq(users.id, userId));
+      console.log("Delete result:", result);
+      
+      res.json({ message: "user deleted successfully", userId });
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      res.status(500).json({ message: "Failed to delete user", error: error.message });
+    }
+  });
+
+  app.get('/api/admin/artists',isAdmin, async (req, res) => {
+    try {
+
+      const allArtists = await db.select({
+        id: users.id,
+        artistId : artists.id,
+        specialty : artists.specialty,
+        biography : artists.bio,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        isVerified : artists.isVerified,
+        isBlocked : artists.isBlocked,
+        socialLinks : artists.socialLinks,
+        imageUrl : users.profileImageUrl,
+        userType: users.userType,
+        createdAt: users.createdAt,
+      }).from(artists).leftJoin(users, eq(artists.userId , users.id)).where(eq(artists.isBlocked,0));
+      
+      res.json(allArtists);
+    } catch (error) {
+      console.error("Error fetching artists:", error);
+      res.status(500).json({ message: "Failed to fetch artists" });
+    }
+  });
+
+  app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
+
+    try {
+      const artistId = parseInt(req.params.id);
+      const { specialty, biography } = req.body;
+      
+      if (!specialty || !biography) {
+        return res.status(400).json({ message: "Speciality & biography are required fields." });
+      }
+
+      await db.update(artists)
+        .set({
+          specialty : specialty  || null,
+          bio: biography || null,
+        })
+        .where(eq(artists.id, artistId))
+
+      console.log("Successfully updated artist info.");
+      res.json({ message: "Successfully updated artist info.", artistId });
+
+    } catch (error) {
+      console.error("Failed to update artist:", error);
+      res.status(500).json({ message: "Failed to update artist." });
+    }
+  });
+
+  app.put("/api/admin/artists/:id/:isPartialUpdate", isAdmin, async (req, res) => {
+
+    try {
+
+      const artistId = parseInt(req.params.id);
+      const dataSet = req.body.isBlocked ? {isBlocked : parseInt(req.body.isBlocked)} : {isVerified : req.body.isVerified } ;
+
+      await db.update(artists)
+        .set(dataSet)
+        .where(eq(artists.id, artistId))
+
+      console.log("Successfully updated artist info....");
+      res.json({ message: "Successfully updated artist info.", artistId });
+
+    } catch (error) {
+      console.error("Failed to update artist:", error);
+      res.status(500).json({ message: "Failed to update artist." });
     }
   });
 
@@ -542,6 +761,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/admin/categories', isAdmin, async (req, res) => {
+    try {
+      
+      const allCategories = await db.select().from(categories).orderBy(categories.id);
+      
+      console.log("Fetched categories:", allCategories.length);
+      res.json(allCategories);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
   // Category CRUD operations
   app.post("/api/admin/categories", isAdmin, async (req, res) => {
     try {
@@ -581,7 +813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({
           name,
           description: description || null,
-          slug: slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+          slug: slug,
         })
         .where(eq(categories.id, categoryId))
         .returning();
@@ -618,21 +850,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete category:", error);
       res.status(500).json({ message: "Failed to delete category", error: error.message });
-    }
-  });
-
-  app.get('/api/admin/categories', isAdmin, async (req, res) => {
-    try {
-      const allCategories = await db.select().from(categories).orderBy(categories.id);
-      console.log("Fetched categories:", allCategories.length);
-      // Disable caching to ensure fresh data
-      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.set('Pragma', 'no-cache');
-      res.set('Expires', '0');
-      res.json(allCategories);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      res.status(500).json({ message: "Failed to fetch categories" });
     }
   });
 

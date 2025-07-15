@@ -6,9 +6,10 @@ import { ArrowRight, Palette, Shirt, Star, Users } from "lucide-react";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex flex-col">
+    
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
+      {/* <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Palette className="h-8 w-8 text-blue-600" />
@@ -23,12 +24,12 @@ export default function Landing() {
             </Link>
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 text-center">
         <div className="max-w-4xl mx-auto">
-          <Badge variant="secondary" className="mb-4">
+          <Badge variant="primary" className="mb-4 bg-primary text-white">
             Custom Products & Artist Community
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
@@ -126,7 +127,7 @@ export default function Landing() {
                 </Button>
               </Link>
               <Link href="/login">
-                <Button size="lg" variant="outline" className="min-w-[200px] border-white text-white hover:bg-white hover:text-blue-600">
+                <Button size="lg" variant="outline" className="min-w-[200px] border-white text-white hover:bg-white text-gray-900">
                   Sign In
                 </Button>
               </Link>
@@ -134,21 +135,7 @@ export default function Landing() {
           </CardHeader>
         </Card>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center">
-            <div className="flex items-center space-x-2">
-              <Palette className="h-6 w-6 text-blue-600" />
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">ArtistMarket</span>
-            </div>
-          </div>
-          <p className="text-center text-gray-600 dark:text-gray-400 mt-4">
-            © 2024 ArtistMarket. All rights reserved.
-          </p>
-        </div>
-      </footer>
+   
     </div>
   );
 }

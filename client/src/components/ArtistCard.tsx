@@ -18,6 +18,7 @@ interface ArtistCardProps {
 }
 
 export default function ArtistCard({ artist }: ArtistCardProps) {
+
   // Fetch user details for the artist
   const { data: userDetails } = useQuery({
     queryKey: [`/api/users/${artist.userId}`],
@@ -34,9 +35,10 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
     },
   });
 
-  // Mock user data (in a real app, this would come from the user details API)
-  const mockUserName = "Artist " + artist.id;
-  const mockAvatar = `https://images.unsplash.com/photo-${1500000000000 + artist.id}?w=64&h=64&fit=crop&crop=face`;
+  // Mock user data (in a real app, this would come from the user details API) //designs?[0].imageUrl != null
+
+  //const mockCover = (designs as any)?.imageUrl != null ? (designs as any)?.imageUrl : `https://images.unsplash.com/photo-${1500000000000 + artist.id}?w=400&h=250&fit=crop`;
+  const mockAvatar = artist.profile_image_url != null ? artist.profile_image_url : `https://images.unsplash.com/photo-${1500000000000 + artist.id}?w=64&h=64&fit=crop&crop=face`;
   const mockRating = (4.5 + (artist.id % 10) * 0.05).toFixed(1);
   const mockReviews = 50 + (artist.id * 17) % 200;
 
@@ -49,7 +51,7 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
         <div className="relative h-48">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20">
             <img 
-              src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=250&fit=crop" 
+              src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=250&fit=crop"
               alt="Artist workspace" 
               className="w-full h-full object-cover opacity-80"
             />
@@ -57,31 +59,35 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
           <div className="absolute bottom-4 left-4">
             <div className="bg-white rounded-full p-1 shadow-lg">
               <img 
-                src={mockAvatar} 
-                alt={mockUserName}
+                src= {artist.profile_image_url}
+                alt={artist.first_name+''+artist.last_name}
                 className="w-12 h-12 rounded-full object-cover"
               />
             </div>
           </div>
-          {artist.isVerified && (
+          {artist.isVerified ? (
             <Badge className="absolute top-4 right-4 bg-green-500">
               Verified
+            </Badge>
+          )
+          :
+          (
+             <Badge className="absolute top-4 right-4 bg-red-500">
+              Unverified
             </Badge>
           )}
         </div>
 
         {/* Content */}
         <div className="p-6">
-          <div className="flex items-start justify-between mb-3">
-            <div>
+            <div className="flex items-start justify-between mb-3">
               <h3 className="text-xl font-semibold mb-1 group-hover:text-primary transition-colors">
-                {mockUserName}
+                {artist.first_name+' '+artist.last_name}
               </h3>
               <p className="text-gray-600 text-sm">
                 {artist.specialty || "Digital Artist"}
               </p>
             </div>
-          </div>
 
           {artist.bio && (
             <p className="text-gray-700 text-sm mb-4 line-clamp-2">
@@ -104,7 +110,7 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
           </div>
 
           {/* Design Samples */}
-          <div className="flex space-x-2 mb-4">
+          {/* <div className="flex space-x-2 mb-4">
             {designs.slice(0, 3).map((design: any, index: number) => (
               <img
                 key={design.id}
@@ -113,25 +119,12 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
                 className="w-12 h-12 rounded object-cover border border-gray-200"
               />
             ))}
-            {designs.length === 0 && (
-              <>
-                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                  <span className="text-xs text-gray-400">No</span>
-                </div>
-                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                  <span className="text-xs text-gray-400">designs</span>
-                </div>
-                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                  <span className="text-xs text-gray-400">yet</span>
-                </div>
-              </>
-            )}
             {designs.length > 3 && (
               <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
                 <span className="text-xs text-gray-500">+{designs.length - 3}</span>
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* Social Links */}
           {(socialLinks.website || socialLinks.instagram) && (
@@ -161,10 +154,10 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
 
           {/* Action Button */}
           <Button 
-            className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => {
               // Navigate to artist profile or designs
-              window.location.href = `/artists/${artist.id}`;
+              window.location.href = `/portfolio/?artist=${artist.id}`;
             }}
           >
             <ExternalLink className="h-4 w-4 mr-2" />

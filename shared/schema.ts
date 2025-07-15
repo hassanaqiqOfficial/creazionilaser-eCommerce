@@ -33,6 +33,7 @@ export const users = pgTable("users", {
   password: varchar("password").notNull(),
   profileImageUrl: varchar("profile_image_url"),
   userType: varchar("user_type").notNull().default("customer"), // customer, artist, admin
+  isBlocked: integer("is_blocked").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -44,7 +45,9 @@ export const artists = pgTable("artists", {
   bio: text("bio"),
   specialty: varchar("specialty"),
   socialLinks: jsonb("social_links"),
+  portfolio : varchar("portfolio"),
   isVerified: boolean("is_verified").default(false),
+  isBlocked: integer("is_blocked").notNull().default(0),
   commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).default("0.30"),
   createdAt: timestamp("created_at").defaultNow(),
 });

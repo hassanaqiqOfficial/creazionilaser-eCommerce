@@ -11,10 +11,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Users, 
   Package, 
-  ShoppingCart, 
+  ShoppingCart,
+  GalleryThumbnails,   
   Settings, 
   BarChart3, 
   Menu,
@@ -22,8 +30,12 @@ import {
   Plus,
   Edit,
   Trash2,
-  Eye
+  Ban,
+  Eye,
+  EyeOff,
+  CheckCheck
 } from "lucide-react";
+
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -42,6 +54,10 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/users"],
   });
 
+  const { data: artists } = useQuery({
+    queryKey: ["/api/admin/artists"],
+  });
+
   const { data: products } = useQuery({
     queryKey: ["/api/admin/products"],
   });
@@ -56,8 +72,16 @@ export default function AdminDashboard() {
 
   const sidebarItems = [
     { id: "overview", label: "Overview", icon: BarChart3 },
-    { id: "users", label: "Users", icon: Users },
-    { id: "categories", label: "Categories", icon: Package },
+    { id: "users", label: "Users",icon: Users,listItems:[
+        {id: "users", label: "Users",icon: Users},
+        {id: "artists", label: "Artists",icon: Users} 
+      ]
+    },
+    { id: "categories", label: "Categories", icon: Package ,listItems:[
+        {id : "categories", label : "Categories",icon: Package },
+        {id : "subcategories", label : "Sub Categories",icon: Package }
+      ] 
+    },
     { id: "products", label: "Products", icon: Package },
     { id: "orders", label: "Orders", icon: ShoppingCart },
     { id: "settings", label: "Settings", icon: Settings },
@@ -92,12 +116,13 @@ export default function AdminDashboard() {
         <nav className="mt-2">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
+
             return (
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id);
-                  setSidebarOpen(false);
+                   (item.id !== 'users' && item.id !== 'categories') ? setActiveTab(item.id) : '';
+                  (item.id !== 'users' && item.id !== 'categories') ? setSidebarOpen(false) : '';
                 }}
                 className={`w-full flex items-center px-6 py-4 text-left transition-all duration-200 ${
                   activeTab === item.id 
@@ -105,10 +130,100 @@ export default function AdminDashboard() {
                     : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <Icon className={`h-5 w-5 mr-3 ${activeTab === item.id ? 'text-blue-600' : 'text-gray-500'}`} />
-                {item.label}
+
+                 
+                { (item.id === 'users') ? (
+
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button className="w-full justify-start flex px-1 py-4 text-left transition-all duration-200" variant="ghost" size="md">
+                          <Icon className={`h-5 w-5 mr-3 ${activeTab === item.id ? 'text-blue-600' : 'text-gray-500'}`} />
+                          {item.label}
+                        </Button>
+                      </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                    
+                    {item.listItems?.map((litems) => (
+                      
+                      
+
+                      <DropdownMenuItem asChild>
+
+                            <button
+                                key={litems.id}
+                                onClick={() => {
+                                  setActiveTab(litems.id);
+                                  setSidebarOpen(false);
+                                }}
+                                className={`w-full flex items-center px-6 py-4 text-left transition-all duration-200 ${
+                                  activeTab === litems.id 
+                                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-600 font-medium' 
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                }`}
+                              >
+                                <Icon className={`h-5 w-5 mr-3 ${activeTab === litems.id ? 'text-blue-600' : 'text-gray-500'}`} />
+                                {litems.label}
+                            </button>
+
+                      </DropdownMenuItem>
+                        
+                    ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                )
+                : item.id === 'categories' ?(
+
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button className="w-full justify-start flex px-1 py-4 text-left transition-all duration-200" variant="ghost" size="md">
+                          <Icon className={`h-5 w-5 mr-3 ${activeTab === item.id ? 'text-blue-600' : 'text-gray-500'}`} />
+                          {item.label}
+                        </Button>
+                      </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                    
+                    {item.listItems?.map((litems) => (
+                      
+                      <DropdownMenuItem asChild>
+
+                            <button
+                                key={litems.id}
+                                onClick={() => {
+                                  setActiveTab(litems.id);
+                                  setSidebarOpen(false);
+                                }}
+                                className={`w-full flex items-center px-6 py-4 text-left transition-all duration-200 ${
+                                  activeTab === litems.id 
+                                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-600 font-medium' 
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                }`}
+                              >
+                                <Icon className={`h-5 w-5 mr-3 ${activeTab === litems.id ? 'text-blue-600' : 'text-gray-500'}`} />
+                                {litems.label}
+                            </button>
+
+                      </DropdownMenuItem>
+                        
+                    ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                )
+                :
+                (
+
+                  <>
+                   <Icon className={`h-5 w-5 mr-3 ${activeTab === item.id ? 'text-blue-600' : 'text-gray-500'}`} />
+                    {item.label}
+                  </>
+
+                )}
               </button>
             );
+
+            
+
           })}
         </nav>
 
@@ -149,7 +264,7 @@ export default function AdminDashboard() {
             </Button>
             <div>
               <h2 className="text-2xl font-bold text-gray-900 capitalize">{activeTab}</h2>
-              <p className="text-sm text-gray-600">Manage your platform from here</p>
+              {/* <p className="text-sm text-gray-600">Manage your platform from here</p> */}
             </div>
           </div>
           <div className="hidden md:flex items-center space-x-4">
@@ -172,7 +287,9 @@ export default function AdminDashboard() {
         <div className="flex-1 overflow-auto bg-gray-50 p-6">
           {activeTab === "overview" && <OverviewTab stats={stats} />}
           {activeTab === "users" && <UsersTab users={users} />}
+          {activeTab === "artists" && <ArtistsTab artists={artists} />}
           {activeTab === "categories" && <CategoriesTab categories={categories} />}
+          {activeTab === "subcategories" && <SubCategoriesTab subcategories={categories} />}
           {activeTab === "products" && <ProductsTab products={products} categories={categories} />}
           {activeTab === "orders" && <OrdersTab orders={orders} />}
           {activeTab === "settings" && <SettingsTab />}
@@ -277,7 +394,86 @@ function OverviewTab({ stats }: { stats?: any }) {
 }
 
 function UsersTab({ users }: { users?: any[] }) {
+
   const { toast } = useToast();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+
+  const userRoles = [
+    {id : 'customer',name : 'Customer'},
+    {id : 'artist',name : 'Artist'}
+  ]
+
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      console.log(userData);
+      console.log('functioning...');
+      return await apiRequest("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/users"] });
+      setIsCreateOpen(false);
+      toast({ title: "User created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to create user",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, ...userData }: any) => {
+      console.log(userData);
+      console.log('funcitoning...');
+      return await apiRequest(`/api/admin/users/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/users"] });
+      setEditingUser(null);
+      toast({ title: "User updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to update user",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const blockUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      return await apiRequest(`/api/admin/users/${userId}/1`, {
+        method: "PUT",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "user block successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to block user",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
 
   return (
     <Card>
@@ -286,10 +482,42 @@ function UsersTab({ users }: { users?: any[] }) {
           <CardTitle>User Management</CardTitle>
           <CardDescription>Manage platform users and their permissions</CardDescription>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add User
-        </Button>
+
+         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add User
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogDescription>Adding a new user to your platform!</DialogDescription>
+            </DialogHeader>
+            <UserForm 
+              userRoles={userRoles}
+              onSubmit={(data) => createUserMutation.mutate(data)}
+              isLoading={createUserMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>Update User information</DialogDescription>
+            </DialogHeader>
+            {editingUser && (
+              <UserForm 
+                user={editingUser}
+                onSubmit={(data) => updateUserMutation.mutate({ id: editingUser.id, ...data })}
+                isLoading={updateUserMutation.isPending}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -316,11 +544,27 @@ function UsersTab({ users }: { users?: any[] }) {
                   <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
+                      {/* <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4" />
+                      </Button> */}
+                      <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setEditingUser(user)}
+                      >
+                      <Edit className="h-4 w-4"/>
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to block "${user.firstName}"? This action cannot be undone.`)) {
+                            blockUserMutation.mutate(user.id);
+                          }
+                        }}
+                        disabled={blockUserMutation.isPending}
+                      >
+                      <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -334,7 +578,517 @@ function UsersTab({ users }: { users?: any[] }) {
   );
 }
 
+function UserForm({ userRoles, user, onSubmit, isLoading }: { 
+  userRoles?: any[]; 
+  user?: any;
+  onSubmit: (data: any) => void;
+  isLoading: boolean;
+
+})  {
+
+  const { toast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [formData, setFormData] = useState({
+    fname: user?.firstName || "",
+    lname: user?.lastName || "",
+    email: user?.email || "",
+    password : user?.password || "",
+    confirmPassword : user?.confirmPassword || "",
+  });
+
+ const handleSubmit = (e: React.FormEvent) => {
+    
+    e.preventDefault();
+    
+    if(!user){
+      if (!formData.fname || !formData.lname || !formData.email || !formData.password || !formData.confirmPassword) {
+        toast({
+          title: "Missing fields",
+          description: "Please fill in all fields.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }    
+    else{
+      if (!formData.fname || !formData.lname || !formData.email) {
+          toast({
+            title: "Missing fields",
+            description: "Please fill in all fields.",
+            variant: "destructive",
+          });
+          return;
+        }
+    }
+
+    if (!user && formData.password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user && formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onSubmit({  ...formData,
+    });
+
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="fname">First Name</Label>
+        <Input
+          id="fname"
+          value={formData.fname}
+          onChange={(e) => setFormData({ ...formData, fname: e.target.value })}
+          placeholder="e.g.,Firstname"
+          required
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="lname">Last Name</Label>
+        <Input
+          id="lname"
+          value={formData.lname}
+          onChange={(e) => setFormData({ ...formData, lname: e.target.value })}
+          placeholder="e.g.,Lastname"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          placeholder="e.g.,Google@gmail.com"
+          required
+        />
+      </div>
+      { (!user) && (
+
+          <>
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Create a password"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="cPassword">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="cPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  placeholder="Confirm your password"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </>
+      
+      )}
+
+      {/* <div>
+        <Label htmlFor="usertype">User Type</Label>
+        <Select value={formData.userType} onValueChange={(value) => setFormData({ ...formData, userType: value })}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select User Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {userRoles?.map((role: any) => (
+              <SelectItem key={role.id} value={role.id.toString()}>
+                {role.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div> */}
+
+
+      
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading ? (user ? "Updating..." : "Creating...") : (user ? "Update User" : "Create User")}
+      </Button>
+    </form>
+  );
+}
+
+function ArtistsTab({ artists }: { artists?: any[] }) {
+
+  const { toast } = useToast();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingArtist, setEditingArtist] = useState<any>(null);
+
+  // const createArtistMutation = useMutation({
+  //   mutationFn: async (artistData: any) => {
+  //     return await apiRequest("/api/admin/artists", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(artistData),
+  //     });
+  //   },
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ["/api/admin/artists"] });
+  //     queryClient.refetchQueries({ queryKey: ["/api/admin/artists"] });
+  //     setIsCreateOpen(false);
+  //     toast({ title: "Artist created successfully" });
+  //   },
+  //   onError: (error: any) => {
+  //     toast({ 
+  //       title: "Failed to create Artist",
+  //       description: error.message,
+  //       variant: "destructive"
+  //     });
+  //   },
+  // });
+
+  const updateArtistMutation = useMutation({
+    mutationFn: async ({ id, ...artistData }: any) => {
+      
+     return await apiRequest(`/api/admin/artists/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(artistData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/artists"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/artists"] });
+      setEditingArtist(null);
+      toast(
+        { title: "Artist updated successfully" }
+      );
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to update Artist",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const blockArtistMutation = useMutation({
+    mutationFn: async (artistId: number) => {
+      return await apiRequest(`/api/admin/artists/${artistId}/${1}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({isBlocked : 1}),    
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/artists"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/artists"] });
+      toast({ title: "artist blocked successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to block artist",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const verificaionArtistMutation = useMutation({
+    mutationFn: async (artistId: number) => {
+      const isVerified = true;
+      return await apiRequest(`/api/admin/artists/${artistId}/${1}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({isVerified : true}),      
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/artists"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/artists"] });
+      toast({ title: "artist verified successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to verify artist",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Artist Management</CardTitle>
+          <CardDescription>Manage platform Artist and their permissions</CardDescription>
+        </div>
+
+         {/* <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Artist
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Create New Artist</DialogTitle>
+              <DialogDescription>Add a new user to your platform</DialogDescription>
+            </DialogHeader>
+            <ArtistForm 
+              onSubmit={(data) => createArtistMutation.mutate(data)}
+              isLoading={createArtistMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog> */}
+
+        <Dialog open={!!editingArtist} onOpenChange={() => setEditingArtist(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Artist</DialogTitle>
+              <DialogDescription>Update Artist information</DialogDescription>
+            </DialogHeader>
+            {editingArtist && (
+              <ArtistForm 
+                artist={editingArtist}
+                onSubmit={(data) => updateArtistMutation.mutate({ id: editingArtist.id, ...data })}
+                isLoading={updateArtistMutation.isPending}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Speciality</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {artists?.map((artist: any) => (
+                
+                <TableRow key={artist.id}>
+                  <TableCell className="font-medium">{artist.firstName} {artist.lastName}</TableCell>
+                  <TableCell>{artist.email}</TableCell>
+                  <TableCell>
+                    {artist.specialty}
+                  </TableCell>
+                  <TableCell>
+                    {artist.isVerified}
+                    { 
+                      artist.isVerified === true ? (
+                        <Badge className="lg-rounded" variant="default" size="sm"> Verified </Badge>
+                      )
+                      : artist.isVerified === false && (
+                        <Badge className="lg-rounded" variant="destructive" size="sm"> Pending </Badge>
+                      )
+                    }
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setEditingArtist(artist)}
+                      >
+                      <Edit className="h-4 w-4"/>
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to block "${artist.firstName}"? This action cannot be undone.`)) {
+                            blockArtistMutation.mutate(artist.id);
+                          }
+                        }}
+                        disabled={blockArtistMutation.isPending}
+                      >
+                      <Ban className="h-4 w-4"/>
+                      </Button>
+                      {artist.isVerified !== true && artist.isBlocked === 0 && (
+                      <Button variant="default" 
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to verify "${artist.firstName}"? This action cannot be undone.`)) {
+                            verificaionArtistMutation.mutate(artist.id);
+                          }
+                        }}
+                        disabled={verificaionArtistMutation.isPending}
+                      >
+                        <CheckCheck className="h-4 w-4" />
+                      </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ArtistForm({ userRoles, artist, onSubmit, isLoading }: { 
+  userRoles?: any[]; 
+  artist?: any;
+  onSubmit: (data: any) => void;
+  isLoading: boolean;
+})  {
+  const [formData, setFormData] = useState({
+    fname: artist?.firstName || "",
+    lname: artist?.lastName || "",
+    email: artist?.email || "",
+    specialty: artist?.specialty || "",
+    biography: artist?.biography || "",
+    userType: artist?.userType || "",
+    bio: artist?.bio || ""
+
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      ...formData,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="fname">Full name</Label>
+        <Input
+          id="fname"
+          type="text"
+          value={formData.fname+' '+formData.lname}
+          disabled
+          onChange={(e) => setFormData({ ...formData, fname: e.target.value })}
+          required
+        />
+      </div>
+      
+      {/* <div>
+        <Label htmlFor="lname">Last Name</Label>
+        <Input
+          id="lname"
+          type="text"
+          value={formData.lname}
+          disabled
+          onChange={(e) => setFormData({ ...formData, lname: e.target.value })}
+        />
+      </div> */}
+
+      {/* <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          disabled
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          required
+        />
+        
+      </div> */}
+
+      <div>
+        <Label htmlFor="usertype">User Type</Label>
+        <Input
+          id="userType"
+          type="text"
+          disabled
+          value={formData.userType}
+          onChange={(e) => setFormData({ ...formData, userType: e.target.value })}
+          required
+        />
+      </div>
+
+       <div>
+        <Label htmlFor="speciality">Speciality</Label>
+        <Textarea
+          id="speciality"
+          value={formData.specialty}
+          onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+          required
+        />
+      </div>
+
+       <div>
+        <Label htmlFor="biography">Biography</Label>
+        <Textarea
+          id="biography"
+          value={formData.biography}
+          onChange={(e) => setFormData({ ...formData, biography: e.target.value })}
+          required
+        />
+      </div>
+
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading ? (artist ? "Updating..." : "Creating...") : (artist ? "Update Artist" : "Create Artist")}
+      </Button>
+    </form>
+  );
+}
+
 function ProductsTab({ products, categories }: { products?: any[]; categories?: any[] }) {
+  
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -412,6 +1166,7 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
           <CardTitle>Product Management</CardTitle>
           <CardDescription>Manage your product catalog and inventory</CardDescription>
         </div>
+
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -449,6 +1204,7 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
             )}
           </DialogContent>
         </Dialog>
+
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -512,7 +1268,8 @@ function ProductForm({ categories, product, onSubmit, isLoading }: {
   product?: any;
   onSubmit: (data: any) => void;
   isLoading: boolean;
-}) {
+})  {
+  
   const [formData, setFormData] = useState({
     name: product?.name || "",
     description: product?.description || "",
@@ -736,6 +1493,7 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
           <CardTitle>Category Management</CardTitle>
           <CardDescription>Organize your products with categories</CardDescription>
         </div>
+
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -754,6 +1512,24 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
             />
           </DialogContent>
         </Dialog>
+
+        <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Category</DialogTitle>
+              <DialogDescription>Edit existing product category</DialogDescription>
+            </DialogHeader>
+            {editingCategory && (
+              <CategoryForm 
+                category={editingCategory}
+                onSubmit={(data) => updateCategoryMutation.mutate({id : editingCategory.id , ...data})}
+                isLoading={updateCategoryMutation.isPending}
+              />
+            )}
+            
+          </DialogContent>
+        </Dialog>
+
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -765,7 +1541,7 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
                 <TableHead>Slug</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
-              </TableRow>
+              </TableRow> 
             </TableHeader>
             <TableBody>
               {categories?.map((category: any) => (
@@ -819,10 +1595,267 @@ function CategoryForm({ category, onSubmit, isLoading }: {
   onSubmit: (data: any) => void;
   isLoading: boolean;
 }) {
+
   const [formData, setFormData] = useState({
     name: category?.name || "",
     description: category?.description || "",
     slug: category?.slug || "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      ...formData,
+      slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+    });
+  };
+
+  // Auto-generate slug from name
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    setFormData({ 
+      ...formData, 
+      name,
+      slug: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Category Name</Label>
+        <Input
+          id="name"
+          value={formData.name}
+          onChange={handleNameChange}
+          placeholder="e.g., Custom T-Shirts"
+          required
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Brief description of this category"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="slug">URL Slug</Label>
+        <Input
+          id="slug"
+          value={formData.slug}
+          onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+          placeholder="auto-generated from name"
+        />
+        <p className="text-xs text-gray-500 mt-1">Used in URLs, auto-generated if left empty</p>
+      </div>
+
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading ? (category ? "Updating..." : "Creating...") : (category ? "Update Category" : "Create Category")}
+      </Button>
+    </form>
+  );
+}
+
+function SubCategoriesTab({ subcategories }: { subcategories?: any[] }) {
+
+  const { toast } = useToast();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingSubCategory, setEditingSubCategory] = useState<any>(null);
+
+  const createSubCategoryMutation = useMutation({
+    mutationFn: async (subcategoryData: any) => {
+      return await apiRequest("/api/admin/subcategories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subcategoryData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/subcategories"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/subcategories"] });
+      setIsCreateOpen(false);
+      toast({ title: "subCategory created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to create subcategory",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const updateSubCategoryMutation = useMutation({
+    mutationFn: async ({ id, ...subcategoryData }: any) => {
+      return await apiRequest(`/api/admin/subcategories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subcategoryData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/subcategories"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/subcategories"] });
+      setEditingSubCategory(null);
+      toast({ title: "subCategory updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to update subcategory",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const deleteSubCategoryMutation = useMutation({
+    mutationFn: async (subcategoryId: number) => {
+      return await apiRequest(`/api/admin/subsubcategories/${subcategoryId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/subcategories"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/subcategories"] });
+      toast({ title: "subCategory deleted successfully" });
+    },
+    onError: (error: any) => {
+      let errorMessage = error.message;
+      
+      // Check if it's a constraint violation
+      if (error.message.includes("product(s) are using this subcategory")) {
+        errorMessage = error.message;
+      } else if (error.message.includes("violates foreign key constraint")) {
+        errorMessage = "Cannot delete category. Products are still using this subcategory.";
+      }
+      
+      toast({ 
+        title: "Cannot Delete subCategory",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Sub Category Management</CardTitle>
+          <CardDescription>Organize your products with subcategories</CardDescription>
+        </div>
+
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Sub Category
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Create New Sub Category</DialogTitle>
+              <DialogDescription>Add a new product subcategory</DialogDescription>
+            </DialogHeader>
+            <SubCategoryForm 
+              onSubmit={(data) => createSubCategoryMutation.mutate(data)}
+              isLoading={createSubCategoryMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!editingSubCategory} onOpenChange={() => setEditingSubCategory(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit subCategory</DialogTitle>
+              <DialogDescription>Edit existing product subcategory</DialogDescription>
+            </DialogHeader>
+            {editingSubCategory && (
+              <SubCategoryForm 
+                subcategory={editingSubCategory}
+                onSubmit={(data) => updateSubCategoryMutation.mutate({id : editingSubCategory.id , ...data})}
+                isLoading={updateSubCategoryMutation.isPending}
+              />
+            )}
+            
+          </DialogContent>
+        </Dialog>
+
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow> 
+            </TableHeader>
+            <TableBody>
+              {subcategories?.map((subcategory: any) => (
+                <TableRow key={subcategory.id}>
+                  <TableCell className="font-medium">{subcategory.name}</TableCell>
+                  <TableCell>{subcategory.description || 'No description'}</TableCell>
+                  <TableCell className="font-mono text-sm bg-gray-50 px-2 py-1 rounded">{subcategory.slug}</TableCell>
+                  <TableCell>{new Date(subcategory.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEditingSubCategory(subcategory)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to delete "${subcategory.name}"? This action cannot be undone.`)) {
+                            deleteSubCategoryMutation.mutate(subcategory.id);
+                          }
+                        }}
+                        disabled={deleteSubCategoryMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(!subcategories || subcategories.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    No subcategories yet. Create your first subcategory to organize products.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SubCategoryForm({ subcategory, onSubmit, isLoading }: { 
+  subcategory?: any;
+  onSubmit: (data: any) => void;
+  isLoading: boolean;
+}) {
+
+  const [formData, setFormData] = useState({
+    name: subcategory?.name || "",
+    description: subcategory?.description || "",
+    slug: subcategory?.slug || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
