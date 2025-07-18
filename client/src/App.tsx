@@ -40,13 +40,13 @@ function Router() {
                   "profile","contact","gift-ideas","how-it-works",
                   "custom-quotes","faqs","privacy-policy","terms-&-condition"];  
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
+  // if (isLoading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="text-lg">Loading...</div>
+  //     </div>
+  //   );
+  // }
 
   // Debug logging removed for production
 
