@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCartItemSchema, insertDesignSchema, categories, products, users, artists } from "@shared/schema";
+import { insertCartItemSchema, insertDesignSchema, categories,subcategories, products, users, artists } from "@shared/schema";
 import { db,pool } from "./db";
 import { sql, eq } from "drizzle-orm";
 import multer from "multer";
@@ -141,13 +141,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Blocked user
+      if (user && user.isBlocked === 1) {
+        return res.status(400).json({ message: "Blocked user,please contact your administrator." });
+      }
+
       const artist = await storage.getArtistByUserId(user.id);
+      if(artist)
+        (req.session as any).artistId = artist.id;
 
       // Set session
       (req.session as any).userId = user.id;
-      if(artist)
-        (req.session as any).artistId = artist.id;
- 
+
       console.log("Login - Set session userId:", user.id);
       
       // Save session explicitly
@@ -263,27 +268,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       
-        const userId = req.session.userId;
+      const currentData = new Date();
+      const userId = req.session.userId;
       
-        const artistData = {
-          userId,
-          bio: req.body.bio,
-          specialty: req.body.specialty,
-          socialLinks: {
-            website: req.body.website,
-            instagram: req.body.instagram,
-          },
-          portfolio : req.file ? `/uploads/${req.file.filename}` : null,
+      const artistData = {
+        userId,
+        bio: req.body.bio,
+        specialty: req.body.specialty,
+        socialLinks: {
+          website: req.body.website,
+          instagram: req.body.instagram,
+        },
+        portfolio : req.file ? `/uploads/${req.file.filename}` : null,
+        createdAt : currentData,
       };
-
+      
       const artist = await storage.createArtist(artistData);
-      res.status(201).json(artist);
+      
+      const userType = "artist";
+      const [user] = await db.update(users)
+        .set({ userType : userType,})
+        .where(eq(users.id, userId))
+        .returning();
 
-      // const userType = "artist";
-      // const [user] = await db.update(users)
-      //   .set({ user_type : userType,})
-      //   .where(eq(users.id, userId))
-      //   .returning();
+      res.status(201).json(artist);
 
     } catch (error) {
       console.error("Error creating artist:", error);
@@ -528,12 +536,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
+      const currentDate = new Date();
 
       const [user] = await db.insert(users).values({
         firstName :fname,
         lastName : lname || null,
         email ,
         password: hashedPassword,      
+        createdAt: currentDate, 
       }).returning();
 
       res.status(201).json(user);
@@ -545,13 +555,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/admin/users/:id", isAdmin, async (req, res) => {
     try {
+
       const userId = parseInt(req.params.id);
-      const {fname,lname,email} = req.body;
+      const {fname,lname,email,currentEmail} = req.body;
+      const currentDate = new Date();
+
+      // Check if user already exists
+      if(currentEmail !== email){
+          const existingUser = await storage.getUserByEmail(email);
+          if (existingUser) {
+            return res.status(400).json({ message: "User already exists with this email" });
+          }
+      }
+
       await db.update(users)
         .set({
           firstName :fname,
           lastName : lname || null,
           email ,
+          updatedAt : currentDate,
         })
         .where(eq(users.id, userId))
       
@@ -566,11 +588,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/admin/users/:id/:isBlock", isAdmin, async (req, res) => {
     try {
+      
+      const currentDate = new Date();
       const userId = parseInt(req.params.id);
       const isBlock = parseInt(req.params.isBlock);
-      const {fname,lname,email} = req.body;
+      
       await db.update(users)
-        .set({isBlocked :isBlock,})
+        .set({isBlocked :isBlock,updatedAt : currentDate,})
         .where(eq(users.id, userId))
       
       console.log("Successfully blocked user");
@@ -582,21 +606,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/users/:id", isAdmin, async (req, res) => {
-    try {
-      const userId = parseInt(req.params.id);
-      console.log("Attempting to delete user with ID:", userId);
-      
-      const result = await db.delete(users).where(eq(users.id, userId));
-      console.log("Delete result:", result);
-      
-      res.json({ message: "user deleted successfully", userId });
-    } catch (error) {
-      console.error("Failed to delete user:", error);
-      res.status(500).json({ message: "Failed to delete user", error: error.message });
-    }
-  });
-
   app.get('/api/admin/artists',isAdmin, async (req, res) => {
     try {
 
@@ -605,15 +614,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         artistId : artists.id,
         specialty : artists.specialty,
         biography : artists.bio,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        email: users.email,
         isVerified : artists.isVerified,
         isBlocked : artists.isBlocked,
         socialLinks : artists.socialLinks,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
         imageUrl : users.profileImageUrl,
         userType: users.userType,
-        createdAt: users.createdAt,
+        createdAt: artists.createdAt,
       }).from(artists).leftJoin(users, eq(artists.userId , users.id)).where(eq(artists.isBlocked,0));
       
       res.json(allArtists);
@@ -623,51 +632,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
+app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
 
     try {
-      const artistId = parseInt(req.params.id);
-      const { specialty, biography } = req.body;
-      
-      if (!specialty || !biography) {
-        return res.status(400).json({ message: "Speciality & biography are required fields." });
-      }
 
-      await db.update(artists)
+
+      const userId = parseInt(req.params.id);
+      const {specialty,biography} = req.body;
+      const currentDate = new Date();
+
+       const query = await db.update(artists)
         .set({
-          specialty : specialty  || null,
-          bio: biography || null,
+          specialty,
+          bio : biography,
+          createdAt : currentDate,
         })
-        .where(eq(artists.id, artistId))
-
-      console.log("Successfully updated artist info.");
-      res.json({ message: "Successfully updated artist info.", artistId });
-
-    } catch (error) {
-      console.error("Failed to update artist:", error);
-      res.status(500).json({ message: "Failed to update artist." });
-    }
-  });
-
-  app.put("/api/admin/artists/:id/:isPartialUpdate", isAdmin, async (req, res) => {
-
-    try {
-
-      const artistId = parseInt(req.params.id);
-      const dataSet = req.body.isBlocked ? {isBlocked : parseInt(req.body.isBlocked)} : {isVerified : req.body.isVerified } ;
-
-      await db.update(artists)
-        .set(dataSet)
-        .where(eq(artists.id, artistId))
-
-      console.log("Successfully updated artist info....");
-      res.json({ message: "Successfully updated artist info.", artistId });
+        .where(eq(artists.id, userId))
+        .toSQL();
+      
+      console.log("Successfully updated artist",query);
+      res.json({ message: "Successfully updated artist", userId });
 
     } catch (error) {
       console.error("Failed to update artist:", error);
       res.status(500).json({ message: "Failed to update artist." });
     }
   });
+
+  // app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
+
+  //   try {
+
+  //     const currentDate = new Date();
+  //     const artistId = parseInt(req.params.id);
+  //     const { specialty, biography } = req.body;
+      
+  //     console.log(specialty,biography,currentDate,artistId);
+      
+  //     if (!specialty || !biography) {
+  //       return res.status(400).json({ message: "Speciality & biography are required fields." });
+  //     }
+
+  //     const [result] = await db.update(artists)
+  //     .set({
+  //       createdAt : currentDate,
+  //       specialty : specialty  || null,
+  //       bio: biography || null,
+  //     })
+  //     .where(eq(artists.id, artistId))
+  //     .returning();
+
+  //     console.log(result);  
+  //     console.log("Successfully updated artist info.",result);
+  //     res.json({ message: "Successfully updated artist info.", artistId });
+
+  //   } catch (error) {
+  //     console.error("Failed to update artist:", error);
+  //     res.status(500).json({ message: "Failed to update artist." });
+  //   }
+  // });
+
+  // app.put("/api/admin/artists/:id/:isPartialUpdate", isAdmin, async (req, res) => {
+
+  //   try {
+
+  //     const artistId = parseInt(req.params.id);
+  //     const dataSet = req.body.isBlocked ? {isBlocked : parseInt(req.body.isBlocked)} : {isVerified : req.body.isVerified } ;
+
+  //     await db.update(artists)
+  //       .set(dataSet)
+  //       .where(eq(artists.id, artistId))
+
+  //     console.log("Successfully updated artist info....");
+  //     res.json({ message: "Successfully updated artist info.", artistId });
+
+  //   } catch (error) {
+  //     console.error("Failed to update artist:", error);
+  //     res.status(500).json({ message: "Failed to update artist." });
+  //   }
+  // });
 
   app.get('/api/admin/products', isAdmin, async (req, res) => {
     try {
@@ -677,7 +720,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: products.description,
         basePrice: products.basePrice,
         categoryId: products.categoryId,
+        subcategoryId: products.subcategoryId,
         categoryName: categories.name,
+        imageUrl: categories.imageUrl,
       })
       .from(products)
       .leftJoin(categories, eq(products.categoryId, categories.id));
@@ -695,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/products', isAdmin, async (req, res) => {
     try {
-      const { name, description, categoryId, basePrice, imageUrl, customizationOptions } = req.body;
+      const { name, description, categoryId,subcategoryId, basePrice, imageUrl, customizationOptions } = req.body;
       
       if (!name || !categoryId || !basePrice) {
         return res.status(400).json({ message: "Name, category, and price are required" });
@@ -705,11 +750,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         description: description || null,
         categoryId: parseInt(categoryId),
+        subcategoryId: parseInt(subcategoryId),
         basePrice,
         imageUrl: imageUrl || null,
         customizationOptions,
       }).returning();
-      
+
       res.status(201).json(product);
     } catch (error) {
       console.error("Error creating product:", error);
@@ -721,7 +767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/products/:id", isAdmin, async (req, res) => {
     try {
       const productId = parseInt(req.params.id);
-      const { name, description, categoryId, basePrice, imageUrl } = req.body;
+      const { name, description, categoryId,subcategoryId, basePrice, imageUrl } = req.body;
       
       if (!name || !categoryId || !basePrice) {
         return res.status(400).json({ message: "Name, category, and price are required" });
@@ -732,12 +778,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name,
           description: description || null,
           categoryId: parseInt(categoryId),
+          subcategoryId : parseInt(subcategoryId),
           basePrice,
           imageUrl: imageUrl || null,
         })
         .where(eq(products.id, productId))
         .returning();
-      
+
       res.json(product);
     } catch (error) {
       console.error("Failed to update product:", error);
@@ -777,8 +824,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Category CRUD operations
   app.post("/api/admin/categories", isAdmin, async (req, res) => {
     try {
-      const { name, description, slug } = req.body;
-      console.log("Creating category with data:", { name, description, slug });
+      
+      const { name, description, slug, imageUrl, sortOrder } = req.body;
+      console.log("Creating category with data:", {name, description, slug ,imageUrl, sortOrder});
       
       if (!name) {
         return res.status(400).json({ message: "Category name is required" });
@@ -788,6 +836,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         description: description || null,
         slug: slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        imageUrl : imageUrl || null,
+        sortOrder,
       }).returning();
       
       console.log("Created category:", category);
@@ -802,8 +852,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/categories/:id", isAdmin, async (req, res) => {
     try {
       const categoryId = parseInt(req.params.id);
-      const { name, description, slug } = req.body;
-      console.log("Updating category:", categoryId, { name, description, slug });
+      const { name, description, slug, imageUrl, sortOrder } = req.body;
+      console.log("Updating category:", categoryId, { name, description, slug ,imageUrl, sortOrder});
       
       if (!name) {
         return res.status(400).json({ message: "Category name is required" });
@@ -814,6 +864,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name,
           description: description || null,
           slug: slug,
+          imageUrl : imageUrl || null,
+          sortOrder,
         })
         .where(eq(categories.id, categoryId))
         .returning();
@@ -853,6 +905,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get Sub Categories
+  app.get('/api/admin/subcategories', isAdmin, async (req, res) => {
+    try {
+      
+      const allCategories = await db.select().from(subcategories).orderBy(subcategories.id);
+      
+      console.log("Fetched subcategories:", allCategories.length);
+      res.json(allCategories);
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  // Sub Category CRUD operations
+  app.post("/api/admin/subcategories", isAdmin, async (req, res) => {
+    try {
+          
+      console.log(req.body);
+
+      const { categoryId, name, description, slug, imageUrl, sortOrder } = req.body;
+      console.log("Creating subcategories with data:", { name, description, slug ,imageUrl, sortOrder});
+      
+      if (!name) {
+        return res.status(400).json({ message: "Category name is required" });
+      }
+
+      const [subcategory] = await db.insert(subcategories).values({
+        categoryId,
+        name,
+        description: description || null,
+        slug: slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        imageUrl : imageUrl || null,
+        sortOrder,
+      }).returning();
+      
+      console.log("Created subcategories:", subcategory);
+      res.json(subcategory);
+    } catch (error) {
+      console.error("Failed to create subcategory:", error);
+      res.status(500).json({ message: "Failed to create subcategory", error: error.message });
+    }
+  });
+
+  // Update Subcategory
+  app.put("/api/admin/subcategories/:id", isAdmin, async (req, res) => {
+    try {
+      const subcategoryId = parseInt(req.params.id);
+      const {categoryId, name, description, slug, imageUrl, sortOrder } = req.body;
+      console.log("Updating subcategories:", subcategoryId, { name, description, slug ,imageUrl, sortOrder});
+      
+      if (!name) {
+        return res.status(400).json({ message: "Sub Category name is required" });
+      }
+
+      const [subcategory] = await db.update(subcategories)
+        .set({
+          categoryId,
+          name,
+          description: description || null,
+          slug: slug,
+          imageUrl : imageUrl || null,
+          sortOrder,
+        })
+        .where(eq(subcategories.id, subcategoryId))
+        .returning();
+      
+      console.log("Updated category:", subcategory);
+      res.json(subcategory);
+    } catch (error) {
+      console.error("Failed to update subcategory:", error);
+      res.status(500).json({ message: "Failed to update subcategory", error: error.message });
+    }
+  });
+
+  // Delete Subcategory (with cascade check)
+  app.delete("/api/admin/subcategories/:id", isAdmin, async (req, res) => {
+    try {
+      const subcategoryId = parseInt(req.params.id);
+      console.log("Attempting to delete subcategory with ID:", subcategoryId);
+      
+      // Check if there are products using this category
+      const productsInSubCategory = await db.select().from(products).where(eq(products.subcategoryId, subcategoryId));
+      console.log("Products in subcategory:", productsInSubCategory.length);
+      
+      if (productsInSubCategory.length > 0) {
+        return res.status(400).json({ 
+          message: `Cannot delete category. ${productsInSubCategory.length} product(s) are using this category. Please delete or reassign the products first.`,
+          productsCount: productsInSubCategory.length
+        });
+      }
+      
+      const result = await db.delete(subcategories).where(eq(subcategories.id, subcategoryId));
+      console.log("Delete subcategory result:", result);
+      
+      res.json({ message: "Sub Category deleted successfully", subcategoryId, result });
+    } catch (error) {
+      console.error("Failed to delete subcategory:", error);
+      res.status(500).json({ message: "Failed to delete subcategory", error: error.message });
+    }
+  });
+
   app.get('/api/admin/orders', isAdmin, async (req, res) => {
     try {
       // For now return empty array since orders table might not have data
@@ -872,6 +1026,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
+
 }
 
 async function seedData() {

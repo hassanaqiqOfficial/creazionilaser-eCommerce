@@ -13,7 +13,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="md:col-span-2">
-            <h3 className="text-2xl font-bold text-primary mb-4">ArtCraft Studio</h3>
+            <Link href="/">
+              <img
+                  src="/uploads/ee2acde843249d712c34635a13c771b7"
+                  alt="Logo Image"
+                  className="h-48 w-72"
+              />
+            </Link>
             <p className="text-gray-300 mb-6 max-w-md">
               Transform your creativity into custom products with our advanced DTF printing, 
               laser engraving, and vinyl cutting services. Join our artist community and 

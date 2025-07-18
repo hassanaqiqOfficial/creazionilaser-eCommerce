@@ -17,6 +17,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+ 
   const { addToCart } = useCart();
   const { toast } = useToast();
 

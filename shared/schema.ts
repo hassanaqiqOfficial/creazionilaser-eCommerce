@@ -62,12 +62,25 @@ export const categories = pgTable("categories", {
   sortOrder: integer("sort_order").default(0),
 });
 
+// Product categories
+export const subcategories = pgTable("subcategories", {
+  id: serial("id").primaryKey(),
+  categoryId : integer("category_id").notNull().unique(),
+  name: varchar("name").notNull(),
+  slug: varchar("slug").notNull().unique(),
+  description: text("description"),
+  imageUrl: varchar("image_url"),
+  sortOrder: integer("sort_order").default(0),
+});
+
+
 // Products
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   name: varchar("name").notNull(),
   description: text("description"),
   categoryId: integer("category_id").references(() => categories.id),
+  subcategoryId: integer("subcategory_id").references(() => subcategories.id),
   basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
   imageUrl: varchar("image_url"),
   customizationOptions: jsonb("customization_options"), // colors, sizes, materials
@@ -132,6 +145,7 @@ export const orderItems = pgTable("order_items", {
 export const insertUserSchema = createInsertSchema(users);
 export const insertArtistSchema = createInsertSchema(artists);
 export const insertCategorySchema = createInsertSchema(categories);
+export const insertSubCategorySchema = createInsertSchema(subcategories);
 export const insertProductSchema = createInsertSchema(products);
 export const insertDesignSchema = createInsertSchema(designs);
 export const insertCartItemSchema = createInsertSchema(cartItems);
@@ -143,6 +157,7 @@ export type InsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Artist = typeof artists.$inferSelect;
 export type Category = typeof categories.$inferSelect;
+export type Subcategory = typeof subcategories.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Design = typeof designs.$inferSelect;
 export type CartItem = typeof cartItems.$inferSelect;

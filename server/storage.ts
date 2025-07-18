@@ -101,13 +101,26 @@ export class DatabaseStorage implements IStorage {
 
   async getArtistByUserId(userId: number): Promise<Artist | undefined> {
     
-    // const [artist] = await db.select().from(artists).where(eq(artists.userId, userId));
-    // return artist;
-    
-    const sqlString = 'SELECT users.first_name,users.last_name,users.email,users.profile_image_url,artists.id,artists.user_id,artists.commission_rate AS commissionRate,artists.bio,artists.specialty,artists.social_links AS socialLinks,artists.created_at AS createdAt,artists.portfolio FROM artists INNER JOIN users ON artists.user_id = users.id WHERE artists.user_id = '+userId+';'; 
-    const artist = await pool.query(sqlString);
+     const artist = await db.select({
+        
+        userId: artists.userId,
+        artistId : artists.id,
+        specialty : artists.specialty,
+        biography : artists.bio,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        portfolio : artists.portfolio,
+        isVerified : artists.isVerified,
+        isBlocked : artists.isBlocked,
+        socialLinks : artists.socialLinks,
+        commissionRate : artists.commissionRate,
+        imageUrl : users.profileImageUrl,
+        userType: users.userType,
+        createdAt: artists.createdAt,
+    }).from(artists).innerJoin(users, eq(artists.userId , users.id)).where(eq(artists.userId,userId));
 
-    return artist.rows[0];
+    return artist[0];
 
   }
 

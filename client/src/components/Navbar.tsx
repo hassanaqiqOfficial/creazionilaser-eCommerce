@@ -99,10 +99,11 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/">
-              {/* <img src="/attached_assets/logo-image-10-jul-2025.jpeg" /> */}
-              <h1 className="text-2xl font-bold text-primary cursor-pointer">
-                ArtCraft Studio
-              </h1>
+              <img
+                  src="/uploads/ee2acde843249d712c34635a13c771b7"
+                  alt="Logo Image"
+                  className="h-16 w-20"
+              />
             </Link>
           </div>
 
@@ -332,8 +333,11 @@ export default function Navbar() {
 
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <Palette className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">ArtistMarket</span>
+            <img
+                src="/uploads/ee2acde843249d712c34635a13c771b7"
+                alt="Logo Image"
+                className="h-16 w-20"
+            />
           </div>
 
             

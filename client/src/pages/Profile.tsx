@@ -20,19 +20,6 @@ export default function Profile() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
-   const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    bio: "",
-    specialty: "",
-    socialLinks: {
-      instagram: "",
-      website: "",
-    },
-    commissionRate: "",
-    createdAt: ""
-  });
-
   const { data: artist } = useQuery({
     queryKey: ["/api/artists/me"],
     enabled: isAuthenticated,
@@ -45,6 +32,21 @@ export default function Profile() {
     enabled: isAuthenticated,
   });
 
+  console.log(artist);
+
+  const [formData, setFormData] = useState({
+    firstName :  "",
+    lastName: "",
+    bio: "",
+    specialty: "",
+    socialLinks: {
+      instagram: "",
+      website: "",
+    },
+    commissionRate: "",
+    createdAt: ""
+  });
+  
   const { data: designs = [] } = useQuery({
     queryKey: ["/api/designs", artist?.id],
     queryFn: async () => {
@@ -316,25 +318,21 @@ export default function Profile() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                         <div>
-                          <Label htmlFor="frist_name">First Name</Label>
+                          <Label htmlFor="firstName">First Name</Label>
                           <Input
-                            id="frist_name"
-                            name="frist_name"
-                            type="text"
-                            value={formData.first_name}
-                            onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                            id="firstName"
+                            value={formData.firstName}
+                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                             placeholder="First Name"
                             required
                           />
                         </div>
                         <div>
-                          <Label htmlFor="last_name">Last Name</Label>
+                          <Label htmlFor="lastName">Last Name</Label>
                           <Input
-                            id="last_name"
-                            name="last_name"
-                            type="text"
-                            value={formData.last_name}
-                            onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                            id="lastName"
+                            value={formData.lastName}
+                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                             placeholder="Last Name"
                             required
                           />

@@ -66,6 +66,10 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/categories"],
   });
 
+  const { data: subcategories } = useQuery({
+    queryKey: ["/api/admin/subcategories"],
+  });
+
   const { data: orders } = useQuery({
     queryKey: ["/api/admin/orders"],
   });
@@ -124,7 +128,7 @@ export default function AdminDashboard() {
                    (item.id !== 'users' && item.id !== 'categories') ? setActiveTab(item.id) : '';
                   (item.id !== 'users' && item.id !== 'categories') ? setSidebarOpen(false) : '';
                 }}
-                className={`w-full flex items-center px-6 py-4 text-left transition-all duration-200 ${
+                className={`w-full flex items-center px-6 ${item.id !== 'users' && item.id !== 'categories' ? 'py-4' : 'py-1'} text-left transition-all duration-200 ${
                   activeTab === item.id 
                     ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-600 font-medium' 
                     : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
@@ -289,8 +293,8 @@ export default function AdminDashboard() {
           {activeTab === "users" && <UsersTab users={users} />}
           {activeTab === "artists" && <ArtistsTab artists={artists} />}
           {activeTab === "categories" && <CategoriesTab categories={categories} />}
-          {activeTab === "subcategories" && <SubCategoriesTab subcategories={categories} />}
-          {activeTab === "products" && <ProductsTab products={products} categories={categories} />}
+          {activeTab === "subcategories" && <SubCategoriesTab subcategories={subcategories} categories={categories}/>}
+          {activeTab === "products" && <ProductsTab products={products} categories={categories} subcategories={subcategories} />}
           {activeTab === "orders" && <OrdersTab orders={orders} />}
           {activeTab === "settings" && <SettingsTab />}
         </div>
@@ -594,6 +598,7 @@ function UserForm({ userRoles, user, onSubmit, isLoading }: {
     fname: user?.firstName || "",
     lname: user?.lastName || "",
     email: user?.email || "",
+    currentEmail : user?.email || "",
     password : user?.password || "",
     confirmPassword : user?.confirmPassword || "",
   });
@@ -669,6 +674,13 @@ function UserForm({ userRoles, user, onSubmit, isLoading }: {
         />
       </div>
 
+      <div>
+        <Input
+          type="hidden"
+          value={formData.currentEmail}
+          onChange={(e) => setFormData({ ...formData, currentEmail: e.target.value })}
+        />
+      </div>
       <div>
         <Label htmlFor="email">Email</Label>
         <Input
@@ -806,9 +818,7 @@ function ArtistsTab({ artists }: { artists?: any[] }) {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/artists"] });
       queryClient.refetchQueries({ queryKey: ["/api/admin/artists"] });
       setEditingArtist(null);
-      toast(
-        { title: "Artist updated successfully" }
-      );
+      // toast({ title: "Artist updated successfully" });
     },
     onError: (error: any) => {
       toast({ 
@@ -986,8 +996,7 @@ function ArtistsTab({ artists }: { artists?: any[] }) {
   );
 }
 
-function ArtistForm({ userRoles, artist, onSubmit, isLoading }: { 
-  userRoles?: any[]; 
+function ArtistForm({ artist, onSubmit, isLoading }: { 
   artist?: any;
   onSubmit: (data: any) => void;
   isLoading: boolean;
@@ -1087,7 +1096,7 @@ function ArtistForm({ userRoles, artist, onSubmit, isLoading }: {
   );
 }
 
-function ProductsTab({ products, categories }: { products?: any[]; categories?: any[] }) {
+function ProductsTab({ products, categories,subcategories }: { products?: any[]; categories?: any[];subcategories?: any[] }) {
   
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -1181,6 +1190,7 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
             </DialogHeader>
             <ProductForm 
               categories={categories} 
+              subcategories={subcategories}
               onSubmit={(data) => createProductMutation.mutate(data)}
               isLoading={createProductMutation.isPending}
             />
@@ -1197,6 +1207,7 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
             {editingProduct && (
               <ProductForm 
                 categories={categories} 
+                subcategories={subcategories}
                 product={editingProduct}
                 onSubmit={(data) => updateProductMutation.mutate({ id: editingProduct.id, ...data })}
                 isLoading={updateProductMutation.isPending}
@@ -1263,17 +1274,21 @@ function ProductsTab({ products, categories }: { products?: any[]; categories?: 
   );
 }
 
-function ProductForm({ categories, product, onSubmit, isLoading }: { 
+function ProductForm({ categories,subcategories, product, onSubmit, isLoading }: { 
   categories?: any[]; 
+  subcategories?: any[]; 
   product?: any;
   onSubmit: (data: any) => void;
   isLoading: boolean;
 })  {
-  
+ 
+  console.log(product);
+
   const [formData, setFormData] = useState({
     name: product?.name || "",
     description: product?.description || "",
     categoryId: product?.categoryId?.toString() || "",
+    subcategoryId: product?.subcategoryId?.toString() || "",
     basePrice: product?.basePrice || "",
     imageUrl: product?.imageUrl || "",
   });
@@ -1283,6 +1298,7 @@ function ProductForm({ categories, product, onSubmit, isLoading }: {
     onSubmit({
       ...formData,
       categoryId: parseInt(formData.categoryId),
+      subcategoryId: parseInt(formData.subcategoryId),
       basePrice: formData.basePrice,
     });
   };
@@ -1295,6 +1311,7 @@ function ProductForm({ categories, product, onSubmit, isLoading }: {
           id="name"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="e.g., Title"
           required
         />
       </div>
@@ -1305,6 +1322,7 @@ function ProductForm({ categories, product, onSubmit, isLoading }: {
           id="description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="e.g., Description"
         />
       </div>
 
@@ -1325,6 +1343,22 @@ function ProductForm({ categories, product, onSubmit, isLoading }: {
       </div>
 
       <div>
+        <Label htmlFor="subcategory">Sub Category</Label>
+        <Select value={formData.subcategoryId} onValueChange={(value) => setFormData({ ...formData, subcategoryId: value })}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select subcategory" />
+          </SelectTrigger>
+          <SelectContent>
+            {subcategories?.map((subcategory: any) => (
+              <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
+                {subcategory.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
         <Label htmlFor="basePrice">Price ($)</Label>
         <Input
           id="basePrice"
@@ -1332,6 +1366,7 @@ function ProductForm({ categories, product, onSubmit, isLoading }: {
           step="0.01"
           value={formData.basePrice}
           onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
+          placeholder="e.g., 0.00"
           required
         />
       </div>
@@ -1343,6 +1378,7 @@ function ProductForm({ categories, product, onSubmit, isLoading }: {
           type="url"
           value={formData.imageUrl}
           onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+          placeholder="e.g., Image Url"
         />
       </div>
 
@@ -1407,6 +1443,7 @@ function OrdersTab({ orders }: { orders?: any[] }) {
 }
 
 function CategoriesTab({ categories }: { categories?: any[] }) {
+  
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
@@ -1507,6 +1544,7 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
               <DialogDescription>Add a new product category</DialogDescription>
             </DialogHeader>
             <CategoryForm 
+
               onSubmit={(data) => createCategoryMutation.mutate(data)}
               isLoading={createCategoryMutation.isPending}
             />
@@ -1539,7 +1577,6 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Slug</TableHead>
-                <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow> 
             </TableHeader>
@@ -1549,7 +1586,6 @@ function CategoriesTab({ categories }: { categories?: any[] }) {
                   <TableCell className="font-medium">{category.name}</TableCell>
                   <TableCell>{category.description || 'No description'}</TableCell>
                   <TableCell className="font-mono text-sm bg-gray-50 px-2 py-1 rounded">{category.slug}</TableCell>
-                  <TableCell>{new Date(category.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button 
@@ -1600,6 +1636,8 @@ function CategoryForm({ category, onSubmit, isLoading }: {
     name: category?.name || "",
     description: category?.description || "",
     slug: category?.slug || "",
+    imageUrl: category?.imageUrl || "",
+    sortOrder: category?.sortOrder || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1653,6 +1691,24 @@ function CategoryForm({ category, onSubmit, isLoading }: {
         />
         <p className="text-xs text-gray-500 mt-1">Used in URLs, auto-generated if left empty</p>
       </div>
+       <div>
+        <Label htmlFor="imageUrl">Image Url</Label>
+        <Input
+          id="imageUrl"
+          value={formData.imageUrl}
+          onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+          placeholder="e.g., Image Url"
+        />
+      </div>
+       <div>
+        <Label htmlFor="sortOrder">Sort Order (Optional)</Label>
+        <Input
+          id="sortOrder"
+          value={formData.sortOrder}
+          onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })}
+          placeholder="e.g., Sort Order"
+        />
+      </div>
 
       <Button type="submit" disabled={isLoading} className="w-full">
         {isLoading ? (category ? "Updating..." : "Creating...") : (category ? "Update Category" : "Create Category")}
@@ -1661,7 +1717,7 @@ function CategoryForm({ category, onSubmit, isLoading }: {
   );
 }
 
-function SubCategoriesTab({ subcategories }: { subcategories?: any[] }) {
+function SubCategoriesTab({ subcategories,categories }: { subcategories?: any[];categories?: any[] }) {
 
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -1715,14 +1771,14 @@ function SubCategoriesTab({ subcategories }: { subcategories?: any[] }) {
 
   const deleteSubCategoryMutation = useMutation({
     mutationFn: async (subcategoryId: number) => {
-      return await apiRequest(`/api/admin/subsubcategories/${subcategoryId}`, {
+      return await apiRequest(`/api/admin/subcategories/${subcategoryId}`, {
         method: "DELETE",
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/subcategories"] });
       queryClient.refetchQueries({ queryKey: ["/api/admin/subcategories"] });
-      toast({ title: "subCategory deleted successfully" });
+      toast({ title: "Sub Category deleted successfully" });
     },
     onError: (error: any) => {
       let errorMessage = error.message;
@@ -1763,6 +1819,7 @@ function SubCategoriesTab({ subcategories }: { subcategories?: any[] }) {
               <DialogDescription>Add a new product subcategory</DialogDescription>
             </DialogHeader>
             <SubCategoryForm 
+              categories ={categories}
               onSubmit={(data) => createSubCategoryMutation.mutate(data)}
               isLoading={createSubCategoryMutation.isPending}
             />
@@ -1777,6 +1834,7 @@ function SubCategoriesTab({ subcategories }: { subcategories?: any[] }) {
             </DialogHeader>
             {editingSubCategory && (
               <SubCategoryForm 
+                categories={categories}
                 subcategory={editingSubCategory}
                 onSubmit={(data) => updateSubCategoryMutation.mutate({id : editingSubCategory.id , ...data})}
                 isLoading={updateSubCategoryMutation.isPending}
@@ -1795,7 +1853,6 @@ function SubCategoriesTab({ subcategories }: { subcategories?: any[] }) {
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Slug</TableHead>
-                <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow> 
             </TableHeader>
@@ -1805,7 +1862,6 @@ function SubCategoriesTab({ subcategories }: { subcategories?: any[] }) {
                   <TableCell className="font-medium">{subcategory.name}</TableCell>
                   <TableCell>{subcategory.description || 'No description'}</TableCell>
                   <TableCell className="font-mono text-sm bg-gray-50 px-2 py-1 rounded">{subcategory.slug}</TableCell>
-                  <TableCell>{new Date(subcategory.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button 
@@ -1846,22 +1902,27 @@ function SubCategoriesTab({ subcategories }: { subcategories?: any[] }) {
   );
 }
 
-function SubCategoryForm({ subcategory, onSubmit, isLoading }: { 
+function SubCategoryForm({ categories,subcategory, onSubmit, isLoading }: { 
+  categories?:any;
   subcategory?: any;
   onSubmit: (data: any) => void;
   isLoading: boolean;
 }) {
 
   const [formData, setFormData] = useState({
+    categoryId: subcategory?.categoryId?.toString() || "",
     name: subcategory?.name || "",
     description: subcategory?.description || "",
     slug: subcategory?.slug || "",
+    imageUrl: subcategory?.imageUrl || "",
+    sortOrder: subcategory?.sortOrder || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
       ...formData,
+      categoryId: parseInt(formData.categoryId),
       slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
     });
   };
@@ -1879,7 +1940,7 @@ function SubCategoryForm({ subcategory, onSubmit, isLoading }: {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="name">Category Name</Label>
+        <Label htmlFor="name">Subcategory Name</Label>
         <Input
           id="name"
           value={formData.name}
@@ -1910,8 +1971,43 @@ function SubCategoryForm({ subcategory, onSubmit, isLoading }: {
         <p className="text-xs text-gray-500 mt-1">Used in URLs, auto-generated if left empty</p>
       </div>
 
+      <div>
+        <Label htmlFor="category">Category</Label>
+        <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories?.map((category: any) => (
+              <SelectItem key={category.id} value={category.id.toString()}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+       <div>
+        <Label htmlFor="imageUrl">Image Url</Label>
+        <Input
+          id="imageUrl"
+          value={formData.imageUrl}
+          onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+          placeholder="e.g., Image Url"
+        />
+      </div>
+       <div>
+        <Label htmlFor="sortOrder">Sort Order (Optional)</Label>
+        <Input
+          id="sortOrder"
+          value={formData.sortOrder}
+          onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })}
+          placeholder="e.g., Sort Order"
+        />
+      </div>
+
       <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? (category ? "Updating..." : "Creating...") : (category ? "Update Category" : "Create Category")}
+        {isLoading ? (subcategory ? "Updating..." : "Creating...") : (subcategory ? "Update Sub Category" : "Create Sub Category")}
       </Button>
     </form>
   );
