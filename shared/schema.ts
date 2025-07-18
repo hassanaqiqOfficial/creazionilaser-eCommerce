@@ -141,6 +141,13 @@ export const orderItems = pgTable("order_items", {
   artistCommission: decimal("artist_commission", { precision: 10, scale: 2 }),
 });
 
+// Settings
+export const settings = pgTable("settings", {
+  id: serial("id").primaryKey(),
+  key: varchar("key").notNull().unique(),
+  value: varchar("value").notNull(),
+ });
+
 // Schemas
 export const insertUserSchema = createInsertSchema(users);
 export const insertArtistSchema = createInsertSchema(artists);
@@ -151,6 +158,7 @@ export const insertDesignSchema = createInsertSchema(designs);
 export const insertCartItemSchema = createInsertSchema(cartItems);
 export const insertOrderSchema = createInsertSchema(orders);
 export const insertOrderItemSchema = createInsertSchema(orderItems);
+export const insertSettingsSchema = createInsertSchema(settings);
 
 // Types
 export type InsertUser = typeof users.$inferInsert;
@@ -163,3 +171,4 @@ export type Design = typeof designs.$inferSelect;
 export type CartItem = typeof cartItems.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
+export type Settings = typeof settings.$inferSelect;
