@@ -22,9 +22,11 @@ import {
   Users, 
   Package, 
   ShoppingCart,
-  GalleryThumbnails,   
+  GalleryThumbnails, 
+  MessageSquareQuote,  
   Settings, 
   BarChart3, 
+  Phone,
   Menu,
   X,
   Plus,
@@ -33,6 +35,7 @@ import {
   Ban,
   Eye,
   EyeOff,
+  Upload,
   CheckCheck
 } from "lucide-react";
 
@@ -40,6 +43,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AdminDashboard() {
+
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
@@ -70,6 +74,14 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/subcategories"],
   });
 
+  const { data: quotes } = useQuery({
+    queryKey: ["/api/admin/quotes"],
+  });
+
+  const { data: enquiries } = useQuery({
+    queryKey: ["/api/admin/enquiries"],
+  });
+
   const { data: orders } = useQuery({
     queryKey: ["/api/admin/orders"],
   });
@@ -88,6 +100,11 @@ export default function AdminDashboard() {
     },
     { id: "products", label: "Products", icon: Package },
     { id: "orders", label: "Orders", icon: ShoppingCart },
+    { id: "enquiries", label: "Enquiries", icon: Package ,listItems:[
+        {id : "enquiries", label : "Enquiries",icon: Phone },
+        {id : "quotes", label : "Custom Quotes",icon: MessageSquareQuote }
+      ] 
+    },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -125,10 +142,10 @@ export default function AdminDashboard() {
               <button
                 key={item.id}
                 onClick={() => {
-                   (item.id !== 'users' && item.id !== 'categories') ? setActiveTab(item.id) : '';
-                  (item.id !== 'users' && item.id !== 'categories') ? setSidebarOpen(false) : '';
+                   (item.id !== 'users' && item.id !== 'categories' && item.id !== 'enquiries') ? setActiveTab(item.id) : '';
+                  (item.id !== 'users' && item.id !== 'categories' && item.id !== 'enquiries') ? setSidebarOpen(false) : '';
                 }}
-                className={`w-full flex items-center px-6 ${item.id !== 'users' && item.id !== 'categories' ? 'py-4' : 'py-1'} text-left transition-all duration-200 ${
+                className={`w-full flex items-center px-6 ${item.id !== 'users' && item.id !== 'categories' && item.id !== 'enquiries' ? 'py-4' : 'py-1'} text-left transition-all duration-200 ${
                   activeTab === item.id 
                     ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-600 font-medium' 
                     : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
@@ -136,7 +153,7 @@ export default function AdminDashboard() {
               >
 
                  
-                { (item.id === 'users') ? (
+                { (item.id === 'users' || item.id === 'categories' || item.id === 'enquiries') ? (
 
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -151,44 +168,6 @@ export default function AdminDashboard() {
                       
                       
 
-                      <DropdownMenuItem asChild>
-
-                            <button
-                                key={litems.id}
-                                onClick={() => {
-                                  setActiveTab(litems.id);
-                                  setSidebarOpen(false);
-                                }}
-                                className={`w-full flex items-center px-6 py-4 text-left transition-all duration-200 ${
-                                  activeTab === litems.id 
-                                    ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-600 font-medium' 
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                                }`}
-                              >
-                                <Icon className={`h-5 w-5 mr-3 ${activeTab === litems.id ? 'text-blue-600' : 'text-gray-500'}`} />
-                                {litems.label}
-                            </button>
-
-                      </DropdownMenuItem>
-                        
-                    ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                )
-                : item.id === 'categories' ?(
-
-                  <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button className="w-full justify-start flex px-1 py-4 text-left transition-all duration-200" variant="ghost" size="md">
-                          <Icon className={`h-5 w-5 mr-3 ${activeTab === item.id ? 'text-blue-600' : 'text-gray-500'}`} />
-                          {item.label}
-                        </Button>
-                      </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                    
-                    {item.listItems?.map((litems) => (
-                      
                       <DropdownMenuItem asChild>
 
                             <button
@@ -295,6 +274,8 @@ export default function AdminDashboard() {
           {activeTab === "categories" && <CategoriesTab categories={categories} />}
           {activeTab === "subcategories" && <SubCategoriesTab subcategories={subcategories} categories={categories}/>}
           {activeTab === "products" && <ProductsTab products={products} categories={categories} subcategories={subcategories} />}
+          {activeTab === "quotes" && <QuotesTab quotes={quotes} />}
+          {activeTab === "enquiries" && <EnquiriesTab enquiries={enquiries} />}
           {activeTab === "orders" && <OrdersTab orders={orders} />}
           {activeTab === "settings" && <SettingsTab />}
         </div>
@@ -1008,8 +989,6 @@ function ArtistForm({ artist, onSubmit, isLoading }: {
     specialty: artist?.specialty || "",
     biography: artist?.biography || "",
     userType: artist?.userType || "",
-    bio: artist?.bio || ""
-
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1386,6 +1365,95 @@ function ProductForm({ categories,subcategories, product, onSubmit, isLoading }:
         {isLoading ? (product ? "Updating..." : "Creating...") : (product ? "Update Product" : "Create Product")}
       </Button>
     </form>
+  );
+}
+
+function QuotesTab({ quotes }: { quotes?: any[] }) {
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription>View and manage custom quotes.</CardDescription>
+      </CardHeader>
+      <CardContent> 
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {quotes?.length ? quotes.map((quote: any) => (
+                <TableRow key={quote.id}>
+                  <TableCell>{quote.title}</TableCell>
+                  <TableCell>{quote.email}</TableCell>
+                  <TableCell>{new Date(quote.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    No quotes yet. Quotes will appear here when user submit a custom quote.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EnquiriesTab({ enquiries }: { enquiries?: any[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription className="">View and manage customer enquiries</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {enquiries?.length ? enquiries.map((enquiry: any) => (
+                <TableRow key={enquiry.id}>
+                  <TableCell>{enquiry.title}</TableCell>
+                  <TableCell>{enquiry.email}</TableCell>
+                  <TableCell>{new Date(enquiry.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    No enquiries yet. enquiries will appear here when user submit their first one.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -2014,56 +2082,173 @@ function SubCategoryForm({ categories,subcategory, onSubmit, isLoading }: {
 }
 
 function SettingsTab() {
-  const { toast } = useToast();
 
-  const handleSaveSettings = () => {
-    toast({ title: "Settings saved successfully" });
-  };
+  const { toast } = useToast();
+  const [selectedFaviconFile, setSelectedFaviconFile] = useState<File | null>(null);
+  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+
+  const createSaveSettingsMutation = useMutation({
+        
+        mutationFn: async (formData: any) => {
+         
+        const response = await fetch("/api/admin/settings", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+          });
+          if (!response.ok) throw new Error("Failed to save platform Settings.");
+          return response.json();
+        },
+      
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Save settings successfully!",
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+         
+        },
+
+        onError: (error) => {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        },
+
+    });
+  
+    const handleSaveSettings = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!selectedLogoFile) return;
+        const formData = new FormData(e.currentTarget);
+        formData.append("logo", selectedLogoFile);
+        createSaveSettingsMutation.mutate(formData);
+    };
 
   return (
     <div className="space-y-6">
+
       <Card>
         <CardHeader>
-          <CardTitle>Platform Settings</CardTitle>
-          <CardDescription>Configure your e-commerce platform</CardDescription>
+          <CardTitle>Branding</CardTitle>
+          <CardDescription>Mange your branding from here.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="commission">Artist Commission (%)</Label>
-              <Input id="commission" type="number" defaultValue="30" />
-            </div>
+          <form onSubmit={handleSaveSettings} className="space-y-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            <div>
-              <Label htmlFor="tax">Tax Rate (%)</Label>
-              <Input id="tax" type="number" step="0.01" defaultValue="0" />
+              <div>
+
+                  <Label htmlFor="favicon">Favicon Icon</Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <input
+                      id="favicon"
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => setSelectedFaviconFile(e.target.files?.[0] || null)}
+                      required
+                    />
+                    <label htmlFor="favicon" className="cursor-pointer">
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600">
+                        {selectedFaviconFile ? selectedFaviconFile.name : "Click to upload design"}
+                      </p>
+                    </label>
+                  </div>
+
+              </div>
+              
+              <div>
+                <Label htmlFor="logo">Logo Icon</Label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    id="logo"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => setSelectedLogoFile(e.target.files?.[0] || null)}
+                    required
+                  />
+                  <label htmlFor="logo" className="cursor-pointer">
+                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600">
+                      {selectedLogoFile ? selectedLogoFile.name : "Click to upload Logo"}
+                    </p>
+                  </label>
+                </div>
+              </div>
+
             </div>
 
-            <div>
-              <Label htmlFor="shipping">Default Shipping ($)</Label>
-              <Input id="shipping" type="number" step="0.01" defaultValue="5.99" />
+            <div className="grid grid-cols-1 md:grid-cols-1">
+              <div>
+                <h1 className="text-2xl"><b>Platform Settings</b></h1>
+                <span className="text-gray-400">This is here major settings are updated.</span>
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="currency">Currency</Label>
-              <Select defaultValue="USD">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD ($)</SelectItem>
-                  <SelectItem value="EUR">EUR (€)</SelectItem>
-                  <SelectItem value="GBP">GBP (£)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          <Button onClick={handleSaveSettings}>
-            Save Settings
-          </Button>
+              <div>
+                <Label htmlFor="commission">Artist Commission (%)</Label>
+                <Input 
+                  id="commission" 
+                  name="commission" 
+                  type="number" 
+                  defaultValue="30" 
+                  />
+              </div>
+              
+              <div>
+                <Label htmlFor="tax">Tax Rate (%)</Label>
+                <Input 
+                  id="tax" 
+                  name="tax" 
+                  type="number" 
+                  step="0.01" 
+                  defaultValue="0" 
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="shipping">Default Shipping ($)</Label>
+                <Input 
+                  id="shipping" 
+                  name="shipping" 
+                  type="number" 
+                  step="0.01" 
+                  defaultValue="5.99" 
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="currency">Currency</Label>
+                <Select id="currency" name="currency" defaultValue="USD">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button 
+              type="submit" 
+              disabled={createSaveSettingsMutation.isPending}
+              >
+              {createSaveSettingsMutation.isPending ? "Saving..." : "Save Settings"}
+            </Button>
+           </form>
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>

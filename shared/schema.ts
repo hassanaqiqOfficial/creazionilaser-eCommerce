@@ -50,6 +50,7 @@ export const artists = pgTable("artists", {
   isBlocked: integer("is_blocked").notNull().default(0),
   commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).default("0.30"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Product categories
@@ -72,7 +73,6 @@ export const subcategories = pgTable("subcategories", {
   imageUrl: varchar("image_url"),
   sortOrder: integer("sort_order").default(0),
 });
-
 
 // Products
 export const products = pgTable("products", {
@@ -122,8 +122,8 @@ export const orders = pgTable("orders", {
   orderNumber: varchar("order_number").notNull().unique(),
   status: varchar("status").notNull().default("pending"), // pending, processing, shipped, delivered, cancelled
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  shippingAddress: jsonb("shipping_address"),
-  paymentStatus: varchar("payment_status").default("pending"),
+  shippingAddress: jsonb("shipping_address").notNull(),
+  paymentStatus: varchar("payment_status").default("pending"), // pending, processed
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -141,6 +141,30 @@ export const orderItems = pgTable("order_items", {
   artistCommission: decimal("artist_commission", { precision: 10, scale: 2 }),
 });
 
+// Quotes
+export const quotes = pgTable("quotes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  title: varchar("title").notNull(),
+  email: varchar("email").notNull(),
+  subject: varchar("subject").notNull(),
+  description: text("description").notNull(),
+  attachment: varchar("attachment"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Enquires
+export const enquiries = pgTable("enquiries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  title: varchar("title").notNull(),
+  email: varchar("email").notNull(),
+  subject: varchar("subject").notNull(),
+  message: text("message").notNull(),
+  attachment: varchar("attachment"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Settings
 export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
@@ -155,6 +179,8 @@ export const insertCategorySchema = createInsertSchema(categories);
 export const insertSubCategorySchema = createInsertSchema(subcategories);
 export const insertProductSchema = createInsertSchema(products);
 export const insertDesignSchema = createInsertSchema(designs);
+export const insertQuotesSchema = createInsertSchema(quotes);
+export const insertEnquiriesSchema = createInsertSchema(enquiries);
 export const insertCartItemSchema = createInsertSchema(cartItems);
 export const insertOrderSchema = createInsertSchema(orders);
 export const insertOrderItemSchema = createInsertSchema(orderItems);
@@ -168,6 +194,8 @@ export type Category = typeof categories.$inferSelect;
 export type Subcategory = typeof subcategories.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Design = typeof designs.$inferSelect;
+export type Quote = typeof quotes.$inferSelect;
+export type Enquiry = typeof enquiries.$inferSelect;
 export type CartItem = typeof cartItems.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;

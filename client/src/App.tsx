@@ -22,6 +22,7 @@ import Quotes from "@/pages/Quotes";
 import Contact from "@/pages/Contact";
 import Profile from "@/pages/Profile";
 import Portfolio from "@/pages/Portfolio";
+import Product from "@/pages/Product";
 import Cart from "@/pages/Cart";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
@@ -35,7 +36,7 @@ import { CartProvider } from "@/hooks/useCart";
 function Router() {
   
   const { user, isAuthenticated, isLoading } = useAuth();
-  const paths = [ "/" ,"home" , "artists","portfolio","designs",
+  const paths = [ "/" ,"home" , "artists","product","portfolio","designs",
                   "become-an-artist","shop","cart","create",
                   "profile","contact","gift-ideas","how-it-works",
                   "custom-quotes","faqs","privacy-policy","terms-&-condition"];  
@@ -103,6 +104,7 @@ function AuthenticatedApp({ user }: { user: any }) {
           <Route path="/create" component={CreativeEditorSDK} />
           <Route path="/artists" component={Artists} />
           <Route path="/designs" component={Designs} />
+          <Route path="/product" component={Product} />
           <Route path="/portfolio" component={Portfolio} />
           <Route path="/become-an-artist" component={BecomeAnArtist} />
           <Route path="/profile" component={Profile} />

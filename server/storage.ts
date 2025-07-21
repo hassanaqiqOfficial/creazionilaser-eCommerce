@@ -1,18 +1,22 @@
 import {
   users,
   artists,
+  quotes,
   categories,
   products,
   designs,
+  enquiries,
   cartItems,
   orders,
   orderItems,
   type User,
   type InsertUser,
   type Artist,
+  type Quote,
   type Category,
   type Product,
   type Design,
+  type Enquiry,
   type CartItem,
   type Order,
   type OrderItem,
@@ -65,6 +69,15 @@ export interface IStorage {
   createOrder(orderData: typeof orders.$inferInsert, items: typeof orderItems.$inferInsert[]): Promise<Order>;
   getOrdersByUser(userId: number): Promise<Order[]>;
   getOrder(id: number): Promise<Order | undefined>;
+
+  // Order operations
+  submitQuote(quoteData: typeof quotes.$inferInsert): Promise<Quote>;
+  getQuotes(): Promise<Quote[]>;
+
+  // Enquiries operations
+  submitEnquiry(enquiryData: typeof enquiries.$inferInsert): Promise<Enquiry>;
+  getEnquiries(): Promise<Enquiry[]>;
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -94,9 +107,27 @@ export class DatabaseStorage implements IStorage {
     return artist;
   }
 
-  async getArtist(id: number): Promise<Artist | undefined> {
-    const [artist] = await db.select().from(artists).where(eq(artists.id, id));
-    return artist;
+  async getArtist(id: number): Promise <Artist | undefined> {
+
+    const artist = await db.select({
+        userId: artists.userId,
+        artistId : artists.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        speciality : artists.specialty,
+        biography : artists.bio,
+        imageUrl : users.profileImageUrl,
+        portfolio : artists.portfolio,
+        isVerified : artists.isVerified,
+        isBlocked : artists.isBlocked,
+        socialLinks : artists.socialLinks,
+        createdAt: artists.createdAt,
+        updatedAt: artists.updatedAt,
+    }).from(artists).innerJoin(users, eq(artists.userId , users.id)).where(eq(artists.id,id));
+
+    // const [artist] = await db.select().from(artists).where(eq(artists.id, id));
+    return artist[0];
   }
 
   async getArtistByUserId(userId: number): Promise<Artist | undefined> {
@@ -139,7 +170,8 @@ export class DatabaseStorage implements IStorage {
         socialLinks : artists.socialLinks,
         imageUrl : users.profileImageUrl,
         userType: users.userType,
-        createdAt: users.createdAt,
+        createdAt: artists.createdAt,
+        updatedAt : artists.updatedAt,
       }).from(artists).innerJoin(users, eq(artists.userId , users.id));
       
    return allArtists; 
@@ -241,6 +273,7 @@ export class DatabaseStorage implements IStorage {
 
   // Order operations
   async createOrder(orderData: typeof orders.$inferInsert, items: typeof orderItems.$inferInsert[]): Promise<Order> {
+   
     const [order] = await db.insert(orders).values(orderData).returning();
     
     const orderItemsWithOrderId = items.map(item => ({
@@ -263,6 +296,29 @@ export class DatabaseStorage implements IStorage {
     const [order] = await db.select().from(orders).where(eq(orders.id, id));
     return order;
   }
+
+  // Quotes operations
+  async submitQuote(quoteData: typeof quotes.$inferInsert): Promise<Quote> {
+    const [quote] = await db.insert(quotes).values(quoteData).returning();
+    return quote;
+  }
+
+   async getQuotes(): Promise<Quote[]> {
+    const [result] = await db.select().from(quotes);
+    return result;
+  }
+
+  // Enquiries operations
+  async submitEnquiry(enquiryData: typeof enquiries.$inferInsert): Promise<Enquiry> {
+    const [enquiry] = await db.insert(enquiries).values(enquiryData).returning();
+    return enquiry;
+  }
+
+   async getEnquiries(): Promise<Enquiry[]> {
+    const [result] = await db.select().from(enquiries);
+    return result;
+  }
+
 }
 
 export const storage = new DatabaseStorage();

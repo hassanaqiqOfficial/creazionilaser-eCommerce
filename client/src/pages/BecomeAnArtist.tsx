@@ -69,6 +69,7 @@ export default function BecomeAnArtist() {
       e.preventDefault();
       if (!uploadedFile) return;
       const formData = new FormData(e.currentTarget);
+
       formData.append("image", uploadedFile);
       createArtistMutation.mutate(formData);
 
@@ -140,7 +141,7 @@ export default function BecomeAnArtist() {
         
         { isCreatingArtist && (
 
-          <div className="space-y-6">
+           <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -240,8 +241,10 @@ export default function BecomeAnArtist() {
                 
               </CardContent>
             </Card>
-          </div>
+        </div>
+          
         )}
+
 
         {!isCreatingArtist && ( <div className="py-16 space-y-6 inline-block"> </div> )}
         

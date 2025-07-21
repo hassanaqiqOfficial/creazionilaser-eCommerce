@@ -38,7 +38,7 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
   // Mock user data (in a real app, this would come from the user details API) //designs?[0].imageUrl != null
 
   //const mockCover = (designs as any)?.imageUrl != null ? (designs as any)?.imageUrl : `https://images.unsplash.com/photo-${1500000000000 + artist.id}?w=400&h=250&fit=crop`;
-  const mockAvatar = artist.profile_image_url != null ? artist.profile_image_url : `https://images.unsplash.com/photo-${1500000000000 + artist.id}?w=64&h=64&fit=crop&crop=face`;
+  const mockAvatar = artist?.imageUrl != null ? artist?.imageUrl : `https://images.unsplash.com/photo-${1500000000000 + artist.id}?w=64&h=64&fit=crop&crop=face`;
   const mockRating = (4.5 + (artist.id % 10) * 0.05).toFixed(1);
   const mockReviews = 50 + (artist.id * 17) % 200;
 
@@ -59,8 +59,8 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
           <div className="absolute bottom-4 left-4">
             <div className="bg-white rounded-full p-1 shadow-lg">
               <img 
-                src= {artist.profile_image_url}
-                alt={artist.first_name+''+artist.last_name}
+                src= {artist?.imageUrl}
+                alt={artist?.firstName+''+artist?.lastName}
                 className="w-12 h-12 rounded-full object-cover"
               />
             </div>
@@ -82,16 +82,16 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
         <div className="p-6">
             <div className="flex items-start justify-between mb-3">
               <h3 className="text-xl font-semibold mb-1 group-hover:text-primary transition-colors">
-                {artist.first_name+' '+artist.last_name}
+                {artist?.firstName+' '+artist?.lastName}
               </h3>
               <p className="text-gray-600 text-sm">
                 {artist.specialty || "Digital Artist"}
               </p>
             </div>
 
-          {artist.bio && (
+          {artist?.biography && (
             <p className="text-gray-700 text-sm mb-4 line-clamp-2">
-              {artist.bio}
+              {artist?.biography}
             </p>
           )}
 
@@ -154,6 +154,7 @@ export default function ArtistCard({ artist }: ArtistCardProps) {
 
           {/* Action Button */}
           <Button 
+            target="_blank"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => {
               // Navigate to artist profile or designs

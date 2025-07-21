@@ -8,12 +8,14 @@ import { ShoppingCart, Minus, Plus, Trash2, X } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 interface ShoppingCartProps {
+
   trigger?: React.ReactNode;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 export default function ShoppingCart({ trigger, isOpen, onOpenChange }: ShoppingCartProps) {
+
   const { cartItems, updateQuantity, removeFromCart, getTotalPrice, getItemCount } = useCart();
   const { isAuthenticated } = useAuth();
 

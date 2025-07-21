@@ -1,7 +1,18 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCartItemSchema, insertDesignSchema, categories,subcategories, products, users, artists } from "@shared/schema";
+import { 
+  insertCartItemSchema, 
+  insertDesignSchema, 
+  categories,
+  subcategories, 
+  products, 
+  users, 
+  artists,
+  quotes,
+  enquiries,
+  settings 
+} from "@shared/schema";
 import { db,pool } from "./db";
 import { sql, eq } from "drizzle-orm";
 import multer from "multer";
@@ -9,6 +20,7 @@ import path from "path";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import { v4 as uuidv4 } from 'uuid'
 
 // Configure multer for file uploads
 const upload = multer({
@@ -203,7 +215,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Category routes
+  // End Authentication routes
+
+
+  // Custom Quotes 
+  app.post('/api/quotes',upload.single('attachment'), async (req: any, res) => {
+
+    try {
+        
+        console.log(req.body);
+        const userId = req.session.userId;
+        const currentDate = new Date();
+
+        const quoteData = {
+          userId : userId || "",
+          title: req.body.title,
+          email: req.body.email,
+          subject: req.body.subject,
+          description: req.body.description,
+          attachment: req.file ? `/uploads/${req.file.filename}` : null,
+          createdAt : currentDate,
+        };
+
+      const quote = await storage.submitQuote(quoteData);
+      res.status(201).json(quote);
+    } catch (error) {
+      console.error("Error submitting custom quote:", error);
+      res.status(500).json({ message: "Failed to submit custom quote" });
+    }
+  });
+
+  // Custom Quotes 
+  app.post('/api/enquiries',upload.single('attachment'), async (req: any, res) => {
+
+    try {
+        
+        const userId = req.session.userId;
+        const currentDate = new Date();
+
+        const enquiryData = {
+          userId : userId || "",
+          title: req.body.title,
+          email: req.body.email,
+          subject: req.body.subject,
+          message: req.body.message,
+          createdAt : currentDate,
+        };
+
+      const quote = await storage.submitEnquiry(enquiryData);
+      res.status(201).json(quote);
+    } catch (error) {
+      console.error("Error submitting custom quote:", error);
+      res.status(500).json({ message: "Failed to submit custom quote" });
+    }
+  });
+
+   // Category routes
   app.get('/api/categories', async (req, res) => {
     try {
       const categories = await storage.getAllCategories();
@@ -264,11 +331,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/artist/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const artist = await storage.getArtist(id);
+      res.json(artist);
+    } catch (error) {
+      console.error("Error fetching artist profile:", error);
+      res.status(500).json({ message: "Failed to fetch artist profile" });
+    }
+  });
+
+  app.get('/api/artists/me', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const artist = await storage.getArtistByUserId(userId);
+      
+      res.json(artist);
+    } catch (error) {
+      console.error("Error fetching artist profile:", error);
+      res.status(500).json({ message: "Failed to fetch artist profile" });
+    }
+  });
+
   app.post('/api/artists', isAuthenticated,upload.single('image'), async (req: any, res) => {
     
     try {
       
-      const currentData = new Date();
+      const currentDate = new Date();
       const userId = req.session.userId;
       
       const artistData = {
@@ -280,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           instagram: req.body.instagram,
         },
         portfolio : req.file ? `/uploads/${req.file.filename}` : null,
-        createdAt : currentData,
+        createdAt : currentDate,
       };
       
       const artist = await storage.createArtist(artistData);
@@ -299,39 +389,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/artists/:id/", isAuthenticated, async (req, res) => {
+  app.put("/api/artists/:id/", isAuthenticated,upload.single('image'), async (req, res) => {
 
     try {
-      const userId = parseInt(req.params.id);
-      const { is_block} = req.params.is_block;
-      
-      const [user] = await db.update(users)
+
+      const currentDate = new Date();
+      const artistId = parseInt(req.params.id);
+      const userId = parseInt(req.body.userId);
+
+      const [artist] = await db.update(artists)
         .set({
-          is_block,
+          bio: req.body.bio,
+          specialty: req.body.specialty,
+          socialLinks: {
+            website: req.body.website,
+            instagram: req.body.instagram,
+          },
+          updatedAt : currentDate,
         })
-        .where(eq(users.id, userId))
+        .where(eq(artists.id, artistId))
         .returning();
-      
-      res.json(user);
-      console.log("Blocked user successfully:");
-      res.json({ message: "user blocked successfully", userId });
+     
+      const [user] = await db.update(users)
+      .set({
+        firstName : req.body.firstName,
+        lastName : req.body.firstName,
+        email : req.body.email,
+        profileImageUrl : req.file ? `/uploads/${req.file.filename}` : req.body.existingProfileImage,
+        updatedAt : currentDate,
+      })
+      .where(eq(users.id , userId))  
+      .returning();
 
+      console.log("Updated artist profile successfully:");
+      res.json({ message: "Updated artist profile successfully", artist });
     } catch (error) {
-      console.error("Failed to block user:", error);
-      res.status(500).json({ message: "Failed to block user" });
+      console.error("Failed to update artist:", error);
+      res.status(500).json({ message: "Failed to udpate artist." });
     }
 
-  });
-
-  app.get('/api/artists/me', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const artist = await storage.getArtistByUserId(userId);
-      res.json(artist);
-    } catch (error) {
-      console.error("Error fetching artist profile:", error);
-      res.status(500).json({ message: "Failed to fetch artist profile" });
-    }
   });
 
   // Design routes
@@ -371,10 +467,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/designs', isAuthenticated, upload.single('image'), async (req: any, res) => {
     
     try {
+
       const userId = req.session.userId;
       
-      // Get or create artist profile
-
+      // Either get existing or create new artist profile.
       let artist = await storage.getArtistByUserId(userId);
       if (!artist) {
         artist = await storage.createArtist({
@@ -387,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const designData = {
-        artistId: artist.id,
+        artistId: artist?.artistId,
         title: req.body.title,
         description: req.body.description,
         price: req.body.price,
@@ -450,20 +546,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Services Routes (Inauthenticated)
-  app.post('/api/quotes', isAuthenticated, async (req: any, res) => {
-    console.log('Hello@');
-    // try {
-    //   const userId = req.session.userId;
-    //   const cartData = { ...req.body, userId };
-    //   const item = await storage.addToCart(cartData);
-    //   res.status(201).json(item);
-    // } catch (error) {
-    //   console.error("Error adding to cart:", error);
-    //   res.status(500).json({ message: "Failed to add to cart" });
-    // }
-  });
+  // Order/Checkout routes (authenticated)
+  app.post('/api/orders', async (req, res) => {
+    try {
 
+      const userId = parseInt(req.session.id);
+      const newOrderId = uuidv4(); // Generate a UUID v4
+      const currentDate = new Date();
+      
+      const orderData = {
+        userId : userId,
+        orderNumber :newOrderId,
+        totalAmount : req.body.totalAmount,
+        shippingAddress : req.body.shippingAddress,
+        notes : req.body.notes,
+        createdAt : currentDate,
+        updatedAt : currentDate,
+      };
+
+      const items = {
+        userId : userId,
+        orderId :12,
+        productId : req.body.cartItems.productId,
+        designId : req.body.cartItems.designId,
+        quantity : req.body.cartItems.quantity,
+        unitPrice : req.body.cartItems.price,
+        customization : req.body.cartItems.customization,
+      };
+
+      const order = await storage.createOrder(orderData , items);
+
+      // For now return empty array since orders table might not have data
+      res.json(order);
+    } catch (error) {
+      console.error("Error placing new order:", error);
+      res.status(500).json({ message: "Failed to place new orders" });
+    }
+  });
+  
   // Admin routes (protected)
   const isAdmin = async (req: any, res: any, next: any) => {
     if (!req.session?.userId) {
@@ -632,7 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
+  app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
 
     try {
 
@@ -659,40 +779,7 @@ app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
     }
   });
 
-  // app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
-
-  //   try {
-
-  //     const currentDate = new Date();
-  //     const artistId = parseInt(req.params.id);
-  //     const { specialty, biography } = req.body;
-      
-  //     console.log(specialty,biography,currentDate,artistId);
-      
-  //     if (!specialty || !biography) {
-  //       return res.status(400).json({ message: "Speciality & biography are required fields." });
-  //     }
-
-  //     const [result] = await db.update(artists)
-  //     .set({
-  //       createdAt : currentDate,
-  //       specialty : specialty  || null,
-  //       bio: biography || null,
-  //     })
-  //     .where(eq(artists.id, artistId))
-  //     .returning();
-
-  //     console.log(result);  
-  //     console.log("Successfully updated artist info.",result);
-  //     res.json({ message: "Successfully updated artist info.", artistId });
-
-  //   } catch (error) {
-  //     console.error("Failed to update artist:", error);
-  //     res.status(500).json({ message: "Failed to update artist." });
-  //   }
-  // });
-
-  // app.put("/api/admin/artists/:id/:isPartialUpdate", isAdmin, async (req, res) => {
+  //app.put("/api/admin/artists/:id/:isPartialUpdate", isAdmin, async (req, res) => {
 
   //   try {
 
@@ -1007,6 +1094,7 @@ app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
     }
   });
 
+  // Get Orders for admin
   app.get('/api/admin/orders', isAdmin, async (req, res) => {
     try {
       // For now return empty array since orders table might not have data
@@ -1014,6 +1102,45 @@ app.put("/api/admin/artists/:id", isAdmin, async (req, res) => {
     } catch (error) {
       console.error("Error fetching orders:", error);
       res.status(500).json({ message: "Failed to fetch orders" });
+    }
+  });
+
+  // Get Custom Quotes for admin
+  app.get('/api/admin/quotes', isAdmin, async (req, res) => {
+    try {
+
+      const result = await db.select().from(quotes);
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching quotes:", error);
+      res.status(500).json({ message: "Failed to fetch quotes" });
+    }
+  });
+
+  // Get Enquiries for admin
+  app.get('/api/admin/enquiries', isAdmin, async (req, res) => {
+    try {
+
+      const result = await db.select().from(enquiries);
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching enquiries:", error);
+      res.status(500).json({ message: "Failed to fetch enquiries" });
+    }
+  });
+
+  // Crud Settings for admin
+  app.post('/api/admin/settings', isAdmin,upload.single('logo'), async (req, res) => {
+    try {
+      
+      console.log(req.body);
+
+      await db.insert(settings)
+
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching enquiries:", error);
+      res.status(500).json({ message: "Failed to fetch enquiries" });
     }
   });
 

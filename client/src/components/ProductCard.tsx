@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Star } from "lucide-react";
+import { ShoppingCart, Star,ImagePlus } from "lucide-react";
+import { useLocation , Link} from "wouter";
 
 interface ProductCardProps {
   product: {
@@ -18,14 +19,16 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
  
+  const [ , setLocation] = useLocation();
   const { addToCart } = useCart();
   const { toast } = useToast();
 
   const handleAddToCart = () => {
     addToCart({
       productId: product.id,
+      product : product,
       quantity: 1,
-      basePrice: product.basePrice,
+      price: product.basePrice,
       customization: {},
     });
     
@@ -62,7 +65,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="p-4">
           <div className="flex items-start justify-between mb-2">
             <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-              {product.name}
+              <Link href={`/product/?product=${product.id}`} target="_blank">{product.name}</Link>
             </h3>
             <Badge variant="primary" className="ml-2">
               ${product.basePrice}
@@ -108,17 +111,26 @@ export default function ProductCard({ product }: ProductCardProps) {
               </div>
             )}
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button 
+              className="w-full mt-3 bg-primary hover:bg-primary/90"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddToCart();
+              }}
+            >
+              Add to Cart
+              <ShoppingCart className="h-4 w-4 mr-2" />
+            </Button>
+            <Button 
+              className="w-full mt-3 bg-primary hover:bg-primary/90"
+              onClick={() => setLocation('/create')}
+            >
+              Customize
+              <ImagePlus className="h-4 w-4 mr-2" />
+            </Button>
+          </div>
           
-          <Button 
-            className="w-full mt-3 bg-primary hover:bg-primary/90"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAddToCart();
-            }}
-          >
-            Add to Cart
-            <ShoppingCart className="h-4 w-4 mr-2" />
-          </Button>
         </div>
       </CardContent>
     </Card>

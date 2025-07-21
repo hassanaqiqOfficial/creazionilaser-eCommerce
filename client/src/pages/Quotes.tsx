@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-import { Search, Filter,Quote,User,Palette,ArrowDown,ArrowRight } from "lucide-react";
+import { Search,Upload, Filter,Quote,User,Palette,ArrowDown,ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import DesignCard from "@/components/DesignCard";
 
@@ -19,48 +19,47 @@ export default function Quotes() {
 
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
-  const [ setLocation] = useLocation();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [ , setLocation] = useLocation();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [selectedArtist, setSelectedArtist] = useState<string>("all");
   const [isCreatingCustomQuote, setIsCreatingCustomQuote] = useState(true);
-  const [sortBy, setSortBy] = useState<string>("name");
 
   const [formData, setFormData] = useState({
     title: "",
     email: "",
     subject: "",
     description: "",
-    socialLinks: {
-      instagram: "",
-      website: "",
-    },
   });
 
-  const { data: artists = [],isLoading } = useQuery({
-    queryKey: ["/api/artists"],
+  const { data : artist,isLoading} = useQuery({
+    queryKey: ["/api/artists/me"],
+    enabled: isAuthenticated,
   });
 
   const createCustomQuoteMutation = useMutation({
       
       mutationFn: async (formData: any) => {
        
-        const response = await fetch("/api/artists", {
+        console.log(formData);
+        const response = await fetch("/api/quotes", {
           method: "POST",
           body: formData,
           credentials: "include",
         });
-        if (!response.ok) throw new Error("Failed to upload design");
+        if (!response.ok) throw new Error("Failed to submit custom quote request.");
         return response.json();
       },
     
       onSuccess: () => {
         toast({
           title: "Success",
-          description: "Artist profile created successfully!",
+          description: "We have received your custom quote successfully!",
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/artists/me"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
         setIsCreatingCustomQuote(true);
+         setFormData({ ...formData, title: '' });
+        setFormData({ ...formData, email: '' });
+        setFormData({ ...formData, subject: '' });
+        setFormData({ ...formData, description: '' });
       },
       onError: (error) => {
         toast({
@@ -73,7 +72,9 @@ export default function Quotes() {
   
   const handleCreateCustomQuote = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!uploadedFile) return;
     const formData = new FormData(e.currentTarget);
+    formData.append("attachment", uploadedFile);
     createCustomQuoteMutation.mutate(formData);
   };
  
@@ -118,17 +119,6 @@ export default function Quotes() {
               <li><b>Express Delivery Service : </b>commission in your favor with fair competitive royalty rates.</li>
             </ul>
 
-            {isAuthenticated && (
-              <Button 
-                size="lg"
-                className="bg-primary hover:bg-primary/90"
-                onClick={() => setIsCreatingCustomQuote(true)}
-              >
-                  Want To Get Quote
-                  <ArrowDown className="h-4 w-4 mr-2" />
-              </Button>
-            )}
-
           </div>
 
       </div>
@@ -156,7 +146,7 @@ export default function Quotes() {
                       <form onSubmit={handleCreateCustomQuote} className="space-y-4">
       
                         <div>
-                          <Label htmlFor="title">Title</Label>
+                          <Label htmlFor="title">Organisation</Label>
                           <Input
                             id="title"
                             name="title"
@@ -168,7 +158,7 @@ export default function Quotes() {
                         </div>
 
                         <div>
-                          <Label htmlFor="email">Email</Label>
+                          <Label htmlFor="email">Professional Email</Label>
                           <Input
                             id="email"
                             name="email"
@@ -203,27 +193,25 @@ export default function Quotes() {
                           />
                         </div>
       
-                        <div>
-                          <Label htmlFor="website">Website (Optional)</Label>
-                          <Input
-                            id="website"
-                            name="website"
-                            value={formData.socialLinks.website}
-                            onChange={(e) => setFormData({ ...formData, socialLinks: e.target.value })}
-                            placeholder="https://google.com"
-                          />
-                        </div>
-      
-                        <div>
-                          <Label htmlFor="instagram">Instagram (Optional)</Label>
-                          <Input
-                            id="instagram"
-                            name="instagram"
-                            value={formData.socialLinks.instagram}
-                            onChange={(e) => setFormData({ ...formData, socialLinks: e.target.value })}
-                            placeholder="@yourusername"
-                          />
-                        </div>
+                         <div>
+                            <Label htmlFor="image-url">Upload Profile Image</Label>
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                              
+                              <input
+                                id="image-url"
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
+                              />
+                              <label htmlFor="image-url" className="cursor-pointer">
+                                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                                <p className="text-gray-600">
+                                  {uploadedFile ? uploadedFile.name : "Click to upload design"}
+                                </p>
+                              </label>
+                            </div>
+                          </div>
       
                         <div className="flex space-x-4 justify-end">
                           <Button 
@@ -304,7 +292,7 @@ export default function Quotes() {
                   size="lg"
                   variant="outline"
                   className="border-white text-gray-900 hover:bg-white hover:text-primary"
-                  onClick={() => setIsCreatingArtist(true)}
+                  onClick={() => setLocation("/become-an-artist")}
                 >
                   Get Started Now
                 </Button>

@@ -16,12 +16,8 @@ import { useLocation,Link } from "wouter";
 
 export default function Contact() {
 
-   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [ setLocation] = useLocation();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [selectedArtist, setSelectedArtist] = useState<string>("all");
   const [isCreatingEnquiry, setIsCreatingEnquiry] = useState(true);
   const [sortBy, setSortBy] = useState<string>("name");
 
@@ -40,22 +36,27 @@ export default function Contact() {
       
       mutationFn: async (formData: any) => {
        
-        const response = await fetch("/api/artists", {
+        console.log(formData);
+        const response = await fetch("/api/enquiries", {
           method: "POST",
           body: formData,
           credentials: "include",
         });
-        if (!response.ok) throw new Error("Failed to upload design");
+        if (!response.ok) throw new Error("Failed to submit your enquiry.");
         return response.json();
       },
     
       onSuccess: () => {
         toast({
           title: "Success",
-          description: "Artist profile created successfully!",
+          description: "We have received your enquiry successfully!",
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/artists/me"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/enquiries"] });
         setIsCreatingEnquiry(true);
+        setFormData({ ...formData, title: '' });
+        setFormData({ ...formData, email: '' });
+        setFormData({ ...formData, subject: '' });
+        setFormData({ ...formData, message: '' });
       },
       onError: (error) => {
         toast({
@@ -65,14 +66,13 @@ export default function Contact() {
         });
       },
   });
-  
+
   const handleEnquiryQuote = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     createEnquiryMutation.mutate(formData);
   };
   
-
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -131,73 +131,73 @@ export default function Contact() {
                   <CardContent className="space-y-6">
                     {/* Artwork Type Selection */}
     
-                    <form onSubmit={handleEnquiryQuote} className="space-y-4">
-    
-                      <div>
-                        <Label htmlFor="title">Fullname</Label>
-                        <Input
-                          id="title"
-                          name="title"
-                          value={formData.title}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                          placeholder="e.g., Fullname"
-                          required
-                        />
-                      </div>
+                      <form onSubmit={handleEnquiryQuote} className="space-y-4">
+      
+                        <div>
+                          <Label htmlFor="title">Full Name</Label>
+                          <Input
+                            id="title"
+                            name="title"
+                            value={formData.title}
+                              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            placeholder="e.g., Title"
+                            required
+                          />
+                        </div>
 
-                      <div>
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          name="email"
-                          value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          placeholder="e.g., Google@gmail.com"
-                          required
-                        />
-                      </div>
-    
-                      <div>
-                        <Label htmlFor="subject">Subject</Label>
-                        <Input
-                          id="subject"
-                          name="subject"
-                          value={formData.subject}
-                          onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                          placeholder="e.g., Subject"
-                          required
-                        />
-                      </div>
-    
-                      <div>
-                        <Label htmlFor="message">Message</Label>
-                        <Textarea
-                          id="message"
-                          name="message"
-                          value={formData.message}
-                          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                          placeholder="Start typing your message here..."
-                          required
-                        />
-                      </div>
-    
-                      <div className="flex space-x-4 justify-end">
-                        <Button 
-                          type="button" 
-                          variant="outline"
-                          onClick={() => setIsCreatingEnquiry(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button 
-                          type="submit" 
-                          disabled={createEnquiryMutation.isPending}
-                        >
-                          {createEnquiryMutation.isPending ? "Submitting..." : "Submit"}
-                        </Button>
-                      </div>
-    
-                    </form>
+                        <div>
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            name="email"
+                            value={formData.email}
+                              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="e.g., Google@gmail.com"
+                            required
+                          />
+                        </div>
+      
+                        <div>
+                          <Label htmlFor="subject">Subject</Label>
+                          <Input
+                            id="subject"
+                            name="subject"
+                            value={formData.subject}
+                            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                            placeholder="e.g., Subject"
+                            required
+                          />
+                        </div>
+      
+                        <div>
+                          <Label htmlFor="message">Message</Label>
+                          <Textarea
+                            id="message"
+                            name="message"
+                            value={formData.message}
+                            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                            placeholder="Start typing your message here..."
+                            required
+                          />
+                        </div>
+      
+                        <div className="flex space-x-4 justify-end">
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            onClick={() => setIsCreatingEnquiry(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            disabled={createEnquiryMutation.isPending}
+                          >
+                            {createEnquiryMutation.isPending ? "Submitting..." : "Submit"}
+                          </Button>
+                        </div>
+      
+                      </form>
                     
                   </CardContent>
                 </CardWithShadow>

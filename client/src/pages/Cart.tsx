@@ -10,16 +10,30 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ShoppingCart, Minus, Plus, Trash2, Package } from "lucide-react";
 import { useState } from "react";
+import { json } from "stream/consumers";
 
 export default function Cart() {
+  
   const { cartItems, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
+  
   const createOrderMutation = useMutation({
-    mutationFn: async (shippingData: any) => {
-      await apiRequest("POST", "/api/orders", { shippingAddress: shippingData });
+    mutationFn: async (orderData: any) => {
+
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create item');
+      }
+      return response.json();
     },
     onSuccess: () => {
       clearCart();
@@ -39,17 +53,25 @@ export default function Cart() {
   });
 
   const handleCheckout = (e: React.FormEvent<HTMLFormElement>) => {
+    
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const shippingAddress = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-      address: formData.get("address"),
-      city: formData.get("city"),
-      zipCode: formData.get("zipCode"),
-      country: formData.get("country"),
-    };
-    createOrderMutation.mutate(shippingAddress);
+
+    const orderData = {
+      shippingAddress : {
+        name: formData.get("name"),
+        email: formData.get("email"),
+        address: formData.get("address"),
+        city: formData.get("city"),
+        zipCode: formData.get("zipCode"),
+        country: formData.get("country"),
+      },
+      cartItems : cartItems,
+      totalAmount : getTotalPrice,
+      notes : formData.get("additionalNotes")
+    } 
+    
+    createOrderMutation.mutate(orderData);
   };
 
   if (!isAuthenticated) {
@@ -221,29 +243,34 @@ export default function Cart() {
               <form onSubmit={handleCheckout} className="space-y-4">
                 <div>
                   <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" name="name" required />
+                  <Input id="name" name="name" required placeholder="e.g,Full Name" />
                 </div>
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" required />
+                  <Input id="email" name="email" type="email" required placeholder="e.g,Google@gmail.com" />
                 </div>
                 <div>
                   <Label htmlFor="address">Address</Label>
-                  <Textarea id="address" name="address" required />
+                  <Textarea id="address" name="address" required placeholder="e.g,Address" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="city">City</Label>
-                    <Input id="city" name="city" required />
+                    <Input id="city" name="city" required placeholder="e.g,City" />
                   </div>
                   <div>
                     <Label htmlFor="zipCode">ZIP Code</Label>
-                    <Input id="zipCode" name="zipCode" required />
+                    <Input id="zipCode" name="zipCode" required placeholder="e.g,Zip Code"/>
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="country">Country</Label>
-                  <Input id="country" name="country" defaultValue="United States" required />
+                  <Input id="country" name="country" defaultValue="United States" required placeholder="e.g,Country" />
+                </div>
+
+                <div>
+                  <Label htmlFor="additionalNotes">Additional Notes (Optional)</Label>
+                  <Textarea id="additionalNotes" name="additionalNotes" placeholder="Start typing your additional notes here..." />
                 </div>
                 
                 <div className="border-t pt-4">
