@@ -1133,9 +1133,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/settings', isAdmin,upload.single('logo'), async (req, res) => {
     try {
       
-      console.log(req.body);
+      const settingData = req.body;
 
-      await db.insert(settings)
+       Object.entries(settingData).map(([key, value]) => {
+        console.log(key,value);
+        //db.insert(settings).values({key : key ,value : value});
+      });
+      
+      //await db.insert(settings).values({key : '',value : ''});
 
       res.json([]);
     } catch (error) {
