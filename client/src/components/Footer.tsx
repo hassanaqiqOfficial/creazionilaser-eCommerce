@@ -15,7 +15,7 @@ export default function Footer() {
           <div className="md:col-span-2">
             <Link href="/">
               <img
-                  src="/uploads/ee2acde843249d712c34635a13c771b7"
+                  src="/uploads/86c865afac2283f69423030f427ef09a"
                   alt="Logo Image"
                   className="h-48 w-72"
               />

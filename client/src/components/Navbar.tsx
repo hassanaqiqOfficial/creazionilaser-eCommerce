@@ -100,7 +100,7 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link href="/">
               <img
-                  src="/uploads/ee2acde843249d712c34635a13c771b7"
+                  src="/uploads/86c865afac2283f69423030f427ef09a"
                   alt="Logo Image"
                   className="h-16 w-20"
               />
@@ -334,7 +334,7 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <img
-                src="/uploads/ee2acde843249d712c34635a13c771b7"
+                src="/uploads/86c865afac2283f69423030f427ef09a"
                 alt="Logo Image"
                 className="h-16 w-20"
             />
